@@ -1,0 +1,6 @@
+software/build
+
+*cache*
+
+**/*.swp
+
