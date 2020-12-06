@@ -52,9 +52,10 @@ tcpip_adapter_ip_info_t ipInfo;     //Current IP info
 
 // PWM Parameters
 
-const uint32_t pwm_pins[2] = {
-            GPIO_NUM_14,
-            GPIO_NUM_16
+const uint32_t pwm_pins[3] = {
+            GPIO_NUM_12,
+            GPIO_NUM_13,
+            GPIO_NUM_14
 };
 
 static esp_err_t event_handler(void *ctx, system_event_t *event)
@@ -189,7 +190,7 @@ void app_main()
     gpio_config_t io_conf;
     io_conf.intr_type = GPIO_INTR_DISABLE;    //Disable interrupts
     io_conf.mode = GPIO_MODE_OUTPUT;          //Set as outputs
-    io_conf.pin_bit_mask = (GPIO_Pin_14|GPIO_Pin_16);
+    io_conf.pin_bit_mask = (GPIO_Pin_12|GPIO_Pin_13|GPIO_Pin_14);
     io_conf.pull_down_en = 0;                 //Disable pull up/downs
     io_conf.pull_up_en = 0;
     gpio_config(&io_conf);
@@ -197,7 +198,7 @@ void app_main()
     //doesn't work
 
     //Init PWM
-    pwm_init(PWM_PERIOD, duties, 2, pwm_pins);
+    pwm_init(PWM_PERIOD, duties, 3, pwm_pins);
     pwm_set_phases(phases);
     pwm_start();
     printf("PWM online\n");
@@ -212,4 +213,5 @@ void app_main()
     }
     printf("Restarting now. (Not really, just exited the main loop though!)\n");
     // fflush(stdout);
+  ESP_ERROR_CHECK( pwm_start() );
 }
