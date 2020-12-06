@@ -125,7 +125,7 @@ void wifi_init_sta()
 
 
     ESP_LOGI(TAG, "Waiting for AP connection...");
-    xEventGroupWaitBits(wifi_event_group, IPV4_GOTIP_BIT, false, true, portMAX_DELAY);
+    xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, false, true, portMAX_DELAY);
     ESP_LOGI(TAG, "Connected to AP with SSID:%s", ESP_WIFI_SSID);
 }
 
@@ -165,7 +165,6 @@ static void status_task(void *pvParameters)
             }
             ESP_LOGI(TAG, "Message sent");
             vTaskDelay(2000 / portTICK_PERIOD_MS);
-            // ESP_LOGI("displacement", "%d %d -> %d",E0,E1,status_frame.dis);
         }
 
         if (sock != -1) {

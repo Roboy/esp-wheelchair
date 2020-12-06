@@ -11,6 +11,12 @@ std_msgs::String status_msg;
 
 ros::Publisher status_pub("status", &status_msg);
 
+// Init PWM Parameters
+
+uint32_t duties[2] = { 500, 500 };
+
+float phases[2] = { 0, 0 };
+
 void pwm_update_t( const std_msgs::Int16& throttle )
 {
   int th_tmp = throttle.data;

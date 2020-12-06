@@ -10,9 +10,9 @@ extern "C" {
 #define PWMLIMIT  1023U
 #define PWM_PERIOD 200U
 
-uint32_t duties[2] = { 500, 500 };
+extern uint32_t duties[2];
 
-float phases[2] = { 0, 0 };
+extern float phases[2];
             
 void rosserial_setup();
 
