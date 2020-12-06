@@ -1,6 +1,6 @@
 software/build
 
-*cache*
+/*cache*
 
 **/*.swp
-
+**/*.swo

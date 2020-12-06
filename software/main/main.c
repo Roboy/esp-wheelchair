@@ -27,6 +27,7 @@
 #include "driver/gpio.h"
 #include "driver/pwm.h"
 
+#include "sdkconfig.h"
 #include "ros_comms.h"
 
 // WIFI and Network config
@@ -49,19 +50,12 @@ const int WIFI_CONNECTED_BIT = BIT0;
 
 tcpip_adapter_ip_info_t ipInfo;     //Current IP info
 
-
 // PWM Parameters
+
 const uint32_t pwm_pins[2] = {
             GPIO_NUM_14,
             GPIO_NUM_16
 };
-
-#define PWM_PERIOD 200U
-
-uint32_t duties[2] = { 500, 500 };
-
-float phases[2] = { 0, 0 };
-            
 
 static esp_err_t event_handler(void *ctx, system_event_t *event)
 {
@@ -109,6 +103,8 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 
 void wifi_init_sta()
 {
+    nvs_flash_init();  
+
     wifi_event_group = xEventGroupCreate();
 
     tcpip_adapter_init();
@@ -125,12 +121,12 @@ void wifi_init_sta()
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
-    ESP_ERROR_CHECK(esp_wifi_start() );
+    ESP_ERROR_CHECK(esp_wifi_start());
 
 
-    ESP_LOGI(TAG, "wifi_init_sta finished.");
-    ESP_LOGI(TAG, "connect to ap SSID:%s password:%s",
-             ESP_WIFI_SSID, ESP_WIFI_PASS);
+    ESP_LOGI(TAG, "Waiting for AP connection...");
+    xEventGroupWaitBits(wifi_event_group, IPV4_GOTIP_BIT, false, true, portMAX_DELAY);
+    ESP_LOGI(TAG, "Connected to AP with SSID:%s", ESP_WIFI_SSID);
 }
 
 static void status_task(void *pvParameters)
@@ -180,7 +176,6 @@ static void status_task(void *pvParameters)
     }
     vTaskDelete(NULL);
 }
-
 
 void app_main()
 {
