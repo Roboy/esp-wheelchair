@@ -52,11 +52,13 @@ tcpip_adapter_ip_info_t ipInfo;     //Current IP info
 
 // PWM Parameters
 
-const uint32_t pwm_pins[3] = {
+const uint32_t pwm_pins[N_PWM_PINS] = {
+            GPIO_NUM_4,
             GPIO_NUM_12,
             GPIO_NUM_13,
             GPIO_NUM_14
 };
+
 
 static esp_err_t event_handler(void *ctx, system_event_t *event)
 {
@@ -190,28 +192,50 @@ void app_main()
     gpio_config_t io_conf;
     io_conf.intr_type = GPIO_INTR_DISABLE;    //Disable interrupts
     io_conf.mode = GPIO_MODE_OUTPUT;          //Set as outputs
-    io_conf.pin_bit_mask = (GPIO_Pin_12|GPIO_Pin_13|GPIO_Pin_14);
+    // Right HF | Left HF | Right HB | Left HB
+    io_conf.pin_bit_mask = (GPIO_Pin_4|GPIO_Pin_12|GPIO_Pin_13|GPIO_Pin_14);
     io_conf.pull_down_en = 0;                 //Disable pull up/downs
     io_conf.pull_up_en = 0;
     gpio_config(&io_conf);
     //REG_WRITE(GPIO_OUT_W1TC_ADDRESS, 0xFFFF);     //Clear all 16 outputs,
     //doesn't work
 
+    // Init GPIOs for low side mosfet activation
+    io_conf.intr_type = GPIO_INTR_DISABLE;    //Disable interrupts
+    io_conf.mode = GPIO_MODE_OUTPUT;          //Set as outputs
+    // Right LF | Left LF | Right LB | Left LB | VDS Enable
+    io_conf.pin_bit_mask = (GPIO_Pin_5|GPIO_Pin_16|GPIO_Pin_0|GPIO_Pin_2|GPIO_Pin_15);
+    io_conf.pull_down_en = 0;                 //Disable pull up/downs
+    io_conf.pull_up_en = 0;
+    gpio_config(&io_conf);
+
+    // Initial MOSFET safe config
+    gpio_set_level(GPIO_NUM_5,1);
+    gpio_set_level(GPIO_NUM_16,1);
+    gpio_set_level(GPIO_NUM_0,1);
+    gpio_set_level(GPIO_NUM_2,1);
+    gpio_set_level(GPIO_NUM_15,0);
+
     //Init PWM
-    pwm_init(PWM_PERIOD, duties, 3, pwm_pins);
+    pwm_init(PWM_PERIOD, duties, N_PWM_PINS, pwm_pins);
     pwm_set_phases(phases);
+    // pwm_set_channel_invert(0b0000);
     pwm_start();
     printf("PWM online\n");
 
     // Init ROS
     rosserial_setup();
 
+    // Activating VDS
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    gpio_set_level(GPIO_NUM_15,1);
+
+    // Spinning ROS
     for (int i = 0; ; i++) {
-        printf("Spinning on spin: %d\n", i);
+        // printf("Spinning on spin: %d\n", i);
         rosserial_spinonce();
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
     printf("Restarting now. (Not really, just exited the main loop though!)\n");
     // fflush(stdout);
-  ESP_ERROR_CHECK( pwm_start() );
 }

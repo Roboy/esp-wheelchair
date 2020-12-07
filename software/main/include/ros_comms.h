@@ -9,11 +9,14 @@ extern "C" {
 
 #define PWMLIMIT  1023U
 #define PWM_PERIOD 1000U
+#define N_PWM_PINS 4
 
-extern uint32_t duties[3];
+extern uint32_t duties[N_PWM_PINS];
 
-extern float phases[3];
+extern float phases[N_PWM_PINS];
             
+extern const gpio_num_t gpio_pins[5];
+
 void rosserial_setup();
 
 void rosserial_spinonce();
