@@ -7,8 +7,8 @@ extern "C" {
 
 // PWM Parameters
 
-#define PWMLIMIT  1023U
-#define PWM_PERIOD 1000U
+#define PWMLIMIT  99U
+#define PWM_PERIOD 100U
 #define N_PWM_PINS 4
 
 extern uint32_t duties[N_PWM_PINS];

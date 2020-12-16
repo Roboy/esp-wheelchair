@@ -12,7 +12,7 @@ ros::NodeHandle nh;
 
 std_msgs::String status_msg;
 
-ros::Publisher status_pub("status", &status_msg);
+ros::Publisher status_pub("/espchair/status", &status_msg);
 
 // Init PWM Parameters
 
@@ -22,8 +22,8 @@ float phases[N_PWM_PINS] = { 0, 0, 0, 0 };
 
 static const uint32_t pwm_limit_val = PWMLIMIT;
 
-static const int pwm_lim_top = pwm_limit_val/2;
-static const int pwm_lim_bot = -1*(pwm_limit_val/2 + 1);
+static const int pwm_lim_top = pwm_limit_val;
+static const int pwm_lim_bot = -1*(pwm_limit_val);
 
 // GPIO List
 
@@ -35,121 +35,143 @@ const gpio_num_t gpio_pins[5] = {
             GPIO_NUM_15
 };
 
-void pwm_update_t( const std_msgs::Int16& throttle )
+void pwm_update_R( const std_msgs::Int16& drive_R )
 {
-  int th_tmp = throttle.data;
-  char message[100];
-  snprintf(message, sizeof(message), "Got throttle value: %d\n", th_tmp);
+  int pwm_tmp = drive_R.data;
+  int msg_len = 100;
+  char message[msg_len];
+  snprintf(message, msg_len, "Got motor right value: %d\n", pwm_tmp);
   status_msg.data = message;
   status_pub.publish(&status_msg);
 
-  if ( th_tmp > pwm_lim_top )     // Clamping
+  if ( pwm_tmp > pwm_lim_top )     // Clamping
   {
-    ESP_LOGW(TAG, "Warning, sent PWM of %d over top limit, pwm_lim_top = %d", th_tmp, pwm_lim_top);
-    th_tmp = pwm_lim_top;
+    // ESP_LOGW(TAG, "Warning, sent PWM of %d over top limit, pwm_lim_top = %d", pwm_tmp, pwm_lim_top);
+    pwm_tmp = pwm_lim_top;
+    snprintf(message, msg_len, "Warning, sent PWM of %d over top limit, pwm_lim_top = %d", pwm_tmp, pwm_lim_top);
+    status_msg.data = message;
+    status_pub.publish(&status_msg);
   }
-  if ( th_tmp < pwm_lim_bot )
+  if ( pwm_tmp < pwm_lim_bot )
   {
-    ESP_LOGW(TAG, "Warning, PWM of %d below pwm_lim_bot", th_tmp);
-    th_tmp = pwm_lim_bot;
+    // ESP_LOGW(TAG, "Warning, PWM of %d below pwm_lim_bot", pwm_tmp);
+    pwm_tmp = pwm_lim_bot;
+    snprintf(message, msg_len, "Warning, PWM of %d below pwm_lim_bot", pwm_tmp);
+    status_msg.data = message;
+    status_pub.publish(&status_msg);
   }
 
-  if (th_tmp >= 0 )    // Direction reversal
+  if (pwm_tmp >= 0 )    // Direction reversal
   {
-    duties[0] = th_tmp;
-    duties[1] = th_tmp;
+    duties[0] = pwm_tmp;
     duties[2] = 0;
-    duties[3] = 0;
 
     gpio_set_level(gpio_pins[0],0);
-    gpio_set_level(gpio_pins[1],0);
     gpio_set_level(gpio_pins[2],1);
-    gpio_set_level(gpio_pins[3],1);
 
-    ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
   }else{
-    th_tmp *= -1;
+    pwm_tmp *= -1;
     duties[0] = 0;
-    duties[1] = 0;
-    duties[2] = th_tmp;
-    duties[3] = th_tmp;
+    duties[2] = pwm_tmp;
 
     gpio_set_level(gpio_pins[0],1);
-    gpio_set_level(gpio_pins[1],1);
     gpio_set_level(gpio_pins[2],0);
+
+  }
+
+
+  // ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
+  // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_0 = %d", pwm_tmp, pwm_limit_val, duties[0]);
+  ESP_ERROR_CHECK( pwm_set_duties(duties) );
+  ESP_ERROR_CHECK( pwm_start() );
+}
+
+void pwm_update_L( const std_msgs::Int16& drive_L )
+{
+  int pwm_tmp = drive_L.data;
+  int msg_len = 100;
+  char message[msg_len];
+  snprintf(message, msg_len, "Got motor left value: %d\n", pwm_tmp);
+  status_msg.data = message;
+  status_pub.publish(&status_msg);
+  if ( pwm_tmp > pwm_lim_top )     // Clamping
+  {
+    // ESP_LOGW(TAG, "Warning, sent PWM of %d over top limit, pwm_lim_top = %d", pwm_tmp, pwm_lim_top);
+    pwm_tmp = pwm_lim_top;
+    snprintf(message, msg_len, "Warning, sent PWM of %d over top limit, pwm_lim_top = %d", pwm_tmp, pwm_lim_top);
+    status_msg.data = message;
+    status_pub.publish(&status_msg);
+  }
+  if ( pwm_tmp < pwm_lim_bot )
+  {
+    // ESP_LOGW(TAG, "Warning, PWM of %d below pwm_lim_bot", pwm_tmp);
+    pwm_tmp = pwm_lim_bot;
+    snprintf(message, msg_len, "Warning, PWM of %d below pwm_lim_bot", pwm_tmp);
+    status_msg.data = message;
+    status_pub.publish(&status_msg);
+  }
+
+  if (pwm_tmp >= 0 )    // Direction reversal
+  {
+    duties[1] = pwm_tmp;
+    duties[3] = 0;
+
+    gpio_set_level(gpio_pins[1],0);
+    gpio_set_level(gpio_pins[3],1);
+
+  }else{              
+    pwm_tmp *= -1;
+    duties[1] = 0;
+    duties[3] = pwm_tmp;
+
+    gpio_set_level(gpio_pins[1],1);
     gpio_set_level(gpio_pins[3],0);
 
-    ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
   }
 
 
-  ESP_LOGI(TAG, "th_tmp = %d, with PWMLIM %d, duties_0 = %d", th_tmp, pwm_limit_val, duties[0]);
+  // ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
+  // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_0 = %d", pwm_tmp, pwm_limit_val, duties[0]);
   ESP_ERROR_CHECK( pwm_set_duties(duties) );
   ESP_ERROR_CHECK( pwm_start() );
 }
 
-void pwm_update_s( const std_msgs::Int16& steering )
+void e_stop( const std_msgs::Int16& e_stop_flag )
 {
-  int st_tmp = steering.data;
-  char message[100];
-  snprintf(message, 100, "Got steering value: %d\n", st_tmp);
+  int tmp = e_stop_flag.data;
+  int msg_len = 100;
+  char message[msg_len];
+  gpio_set_level(GPIO_NUM_15,0);    //Disconnect main relay
+  if ( tmp != 0 ) {
+    for ( int i = 0; i < 4; i++){   
+      duties[i] = 0;                    //Set all PWM to 0
+      gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
+    }
+  }else{
+      gpio_set_level(GPIO_NUM_15,1);
+  }
+
+  ESP_ERROR_CHECK( pwm_set_duties(duties) );
+  ESP_ERROR_CHECK( pwm_start() );
+
+  // ESP_LOGW(TAG, "GOT EMERGENCY STOP SIGNAL, DISABLING MOTORS!");
+  snprintf(message, msg_len, "GOT EMERGENCY STOP SIGNAL, DISABLING MOTORS!");
   status_msg.data = message;
   status_pub.publish(&status_msg);
-  if ( st_tmp > pwm_lim_top )     // Clamping
-  {
-    ESP_LOGW(TAG, "Warning, sent PWM of %d over top limit, pwm_lim_top = %d", st_tmp, pwm_lim_top);
-    st_tmp = pwm_lim_top;
-  }
-  if ( st_tmp < pwm_lim_bot )
-  {
-    ESP_LOGW(TAG, "Warning, PWM of %d below pwm_lim_bot", st_tmp);
-    st_tmp = pwm_lim_bot;
-  }
-
-  if (st_tmp >= 0 )    // Run LEFT wheel to steer RIGHT
-  {
-    duties[0] = 0;
-    duties[1] = st_tmp;
-    duties[2] = 0;
-    duties[3] = 0;
-
-    gpio_set_level(gpio_pins[0],1);
-    gpio_set_level(gpio_pins[1],0);
-    gpio_set_level(gpio_pins[2],1);
-    gpio_set_level(gpio_pins[3],1);
-
-    ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
-  }else{              // Run RIGHT wheel to steer LEFT
-    st_tmp *= -1;
-    duties[0] = st_tmp;
-    duties[1] = 0;
-    duties[2] = 0;
-    duties[3] = 0;
-
-    gpio_set_level(gpio_pins[0],0);
-    gpio_set_level(gpio_pins[1],1);
-    gpio_set_level(gpio_pins[2],1);
-    gpio_set_level(gpio_pins[3],1);
-
-    ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
-  }
-
-
-  ESP_LOGI(TAG, "st_tmp = %d, with PWMLIM %d, duties_0 = %d", st_tmp, pwm_limit_val, duties[0]);
-  ESP_ERROR_CHECK( pwm_set_duties(duties) );
-  ESP_ERROR_CHECK( pwm_start() );
 }
 
-ros::Subscriber<std_msgs::Int16> throttle_sub("throttle", &pwm_update_t);
-ros::Subscriber<std_msgs::Int16> steer_sub("steering", &pwm_update_s);
+ros::Subscriber<std_msgs::Int16> w_left_sub("/espchair/wheel_L", &pwm_update_L);
+ros::Subscriber<std_msgs::Int16> w_right_sub("/espchair/wheel_R", &pwm_update_R);
+ros::Subscriber<std_msgs::Int16> emergency_stop_sub("/espchair/emergency_stop", &e_stop);
 
 
 void rosserial_setup()
 {
   nh.initNode();
   nh.advertise(status_pub);
-  nh.subscribe(throttle_sub);
-  nh.subscribe(steer_sub);
+  nh.subscribe(w_right_sub);
+  nh.subscribe(w_left_sub);
+  nh.subscribe(emergency_stop_sub);
 }
 
 void rosserial_spinonce()

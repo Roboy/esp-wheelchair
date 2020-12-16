@@ -31,7 +31,7 @@
 #include "ros_comms.h"
 
 // WIFI and Network config
-#define HOST_IP_ADDR "192.168.0.127"
+#define HOST_IP_ADDR "192.168.0.105"
 #define PORT 8000
 
 #define ESP_WIFI_SSID       "roboy"
@@ -132,6 +132,19 @@ void wifi_init_sta()
     ESP_LOGI(TAG, "Connected to AP with SSID:%s", ESP_WIFI_SSID);
 }
 
+static void ros_spin_task(void *pvParameters)
+{
+  TickType_t xLastWakeTime;
+  xLastWakeTime = xTaskGetTickCount();    // Get initial count at task start
+
+  for ( ;; )
+  {
+    rosserial_spinonce();
+
+    vTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS( 10 ));
+  }
+}
+
 static void status_task(void *pvParameters)
 {
     char addr_str[128];
@@ -185,8 +198,8 @@ void app_main()
 
     // Init wifi and network stack
     wifi_init_sta();
-    xTaskCreate(&status_task,"status_task",2048,NULL,2,NULL);
-    printf("status_task starting\n");
+    // xTaskCreate(&status_task,"status_task",2048,NULL,2,NULL);
+    // printf("status_task starting\n");
 
     // Init GPIOs for PWM output and MOSFET control
     gpio_config_t io_conf;
@@ -231,11 +244,18 @@ void app_main()
     gpio_set_level(GPIO_NUM_15,1);
 
     // Spinning ROS
+    // xTaskCreate(&ros_spin_task,"ros_spin_task",4096,NULL,4,NULL);
+    
     for (int i = 0; ; i++) {
         // printf("Spinning on spin: %d\n", i);
         rosserial_spinonce();
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(1 / portTICK_PERIOD_MS);
     }
+
+    // for ( ;; )      // Main idle loop
+    // {
+    // }
+
     printf("Restarting now. (Not really, just exited the main loop though!)\n");
     // fflush(stdout);
 }
