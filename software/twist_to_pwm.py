@@ -2,13 +2,13 @@ import rospy
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Int16
 
-PWM_MIN = 50
-PWMRANGE = 800
+PWM_MIN = 10
+PWMRANGE = 160
 
 rospy.init_node("wheelchair_twist_converter")
 
-pub_l = rospy.Publisher("/espchair/wheel_LL", Int16, queue_size=1)
-pub_r = rospy.Publisher("/espchair/wheel_RR", Int16, queue_size=1)
+pub_l = rospy.Publisher("/espchair/wheel_L", Int16, queue_size=1)
+pub_r = rospy.Publisher("/espchair/wheel_R", Int16, queue_size=1)
 
 sign = lambda a: (a>0) - (a<0)
 
