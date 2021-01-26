@@ -29,6 +29,7 @@ static const int pwm_lim_bot = -1*(pwm_limit_val);
 
 static bool emergency_stop_active = false;
 
+esp_timer_handle_t timer_handle;
 
 // GPIO List
 
@@ -85,7 +86,7 @@ void pwm_update_R( const std_msgs::Int16& drive_R )
   }
 
   ESP_ERROR_CHECK( esp_timer_stop(timer_handle) ); //Feed the timer
-  ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, 500000) );
+  ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, 5000000) );
 
   //if ( !hw_timer_get_enable() )           //If timer was not running re-enable it
   //  ESP_ERROR_CHECK( hw_timer_enable(1) );
@@ -149,7 +150,7 @@ void pwm_update_L( const std_msgs::Int16& drive_L )
   }
 
   ESP_ERROR_CHECK( esp_timer_stop(timer_handle) ); //Feed the timer
-  ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, 500000) );
+  ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, 5000000) );
 
   //if ( !hw_timer_get_enable() )           //If timer was not running re-enable it
   //  ESP_ERROR_CHECK( hw_timer_enable(1) );
@@ -223,6 +224,7 @@ ros::Subscriber<std_msgs::Empty> emergency_recover_sub("/roboy/middleware/espcha
 void timer_callback(void *arg)
 {
   // ESP_ERROR_CHECK( hw_timer_enable(0) ); //Stop the timer
+  ESP_LOGI(TAG, "Timer expired!");
 
   for ( int i = 0; i < 4; i++){       //Stop all motors
     duties[i] = 0;                    //Set all PWM to 0
@@ -235,7 +237,10 @@ void timer_callback(void *arg)
 
 void rosserial_setup()
 {
-  esp_timer_create_args_t timer_cfg;
+  const esp_timer_create_args_t timer_cfg = {
+    .callback = &timer_callback,
+    .name = "wdt_pwm"
+  };
 
   nh.initNode();
   nh.advertise(status_pub);
@@ -245,8 +250,6 @@ void rosserial_setup()
   nh.subscribe(emergency_recover_sub);
 
   ESP_ERROR_CHECK( esp_timer_init() );
-  timer_cfg.callback = timer_callback;
-  timer_cfg.name = "wdt_pwm";
 
   ESP_ERROR_CHECK( esp_timer_create(&timer_cfg, &timer_handle) );
 
