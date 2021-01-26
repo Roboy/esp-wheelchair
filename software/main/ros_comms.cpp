@@ -27,6 +27,8 @@ static const uint32_t pwm_limit_val = PWMLIMIT;
 static const int pwm_lim_top = pwm_limit_val;
 static const int pwm_lim_bot = -1*(pwm_limit_val);
 
+static bool emergency_stop_active = false;
+
 // GPIO List
 
 const gpio_num_t gpio_pins[5] = {
@@ -88,8 +90,17 @@ void pwm_update_R( const std_msgs::Int16& drive_R )
 
   // ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
   // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_0 = %d", pwm_tmp, pwm_limit_val, duties[0]);
-  ESP_ERROR_CHECK( pwm_set_duties(duties) );
-  ESP_ERROR_CHECK( pwm_start() );
+  if ( !emergency_stop_active )
+  {
+    ESP_ERROR_CHECK( pwm_set_duties(duties) );
+    ESP_ERROR_CHECK( pwm_start() );
+  } else {
+    for ( int i = 0; i < 4; i++){       //Ensure pwm=0
+      duties[i] = 0;                    //Set all PWM to 0
+      gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
+    }
+  }
+
 }
 
 void pwm_update_L( const std_msgs::Int16& drive_L )
@@ -142,8 +153,16 @@ void pwm_update_L( const std_msgs::Int16& drive_L )
 
   // ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
   // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_0 = %d", pwm_tmp, pwm_limit_val, duties[0]);
-  ESP_ERROR_CHECK( pwm_set_duties(duties) );
-  ESP_ERROR_CHECK( pwm_start() );
+  if ( !emergency_stop_active )
+  {
+    ESP_ERROR_CHECK( pwm_set_duties(duties) );
+    ESP_ERROR_CHECK( pwm_start() );
+  } else {
+    for ( int i = 0; i < 4; i++){       //Ensure pwm=0
+      duties[i] = 0;                    //Set all PWM to 0
+      gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
+    }
+  }
 }
 
 void e_stop( const std_msgs::Empty& e_stop_flag )
@@ -151,6 +170,9 @@ void e_stop( const std_msgs::Empty& e_stop_flag )
   int msg_len = 100;
   char message[msg_len];
   gpio_set_level(GPIO_NUM_15,0);      //Disconnect main relay
+
+  emergency_stop_active = true;
+  ESP_ERROR_CHECK( hw_timer_enable(0) ); //Stop the timer
 
   for ( int i = 0; i < 4; i++){   
     duties[i] = 0;                    //Set all PWM to 0
@@ -170,6 +192,9 @@ void e_recover( const std_msgs::Empty& msg )
 {
   int msg_len = 100;
   char message[msg_len];
+
+  emergency_stop_active = false;
+  ESP_ERROR_CHECK( hw_timer_enable(1) ); //Restart the timer
 
   for ( int i = 0; i < 4; i++){       //Ensure pwm=0 at start
     duties[i] = 0;                    //Set all PWM to 0
@@ -225,6 +250,15 @@ void rosserial_setup()
 
 void rosserial_spinonce()
 {
+  static int i = 0;
+
+  if ( i >= 10 )
+  {
+    i = 0;
+  }
+
+  i++;
+
   nh.spinOnce();
 }
 

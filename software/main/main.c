@@ -268,6 +268,8 @@ void app_main()
     
     for (;;) {    // Spin ROS every ~1 ms -ish
         rosserial_spinonce();
+        if ( !hw_timer_get_enable() ) 
+          ESP_LOGI(TAG, "Timer ran out, stopped.");
         vTaskDelay(1 / portTICK_PERIOD_MS);
     }
 
