@@ -24,6 +24,8 @@ extern float phases[N_PWM_PINS];
             
 extern const gpio_num_t gpio_pins[5];
 
+extern esp_timer_handle_t timer_handle;
+
 void rosserial_setup();
 
 void rosserial_spinonce();
