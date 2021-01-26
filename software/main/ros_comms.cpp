@@ -3,6 +3,7 @@
 #include "ros.h"
 #include "std_msgs/String.h"
 #include "std_msgs/Int16.h"
+#include "std_msgs/Empty.h"
 #include "ros_comms.h"
 
 static const char* TAG = "ros-comms";
@@ -136,20 +137,20 @@ void pwm_update_L( const std_msgs::Int16& drive_L )
   ESP_ERROR_CHECK( pwm_start() );
 }
 
-void e_stop( const std_msgs::Int16& e_stop_flag )
+void e_stop( const std_msgs::Empty& e_stop_flag )
 {
-  int tmp = e_stop_flag.data;
+//   int tmp = e_stop_flag.data;
   int msg_len = 100;
   char message[msg_len];
   gpio_set_level(GPIO_NUM_15,0);    //Disconnect main relay
-  if ( tmp != 0 ) {
+//   if ( tmp != 0 ) {
     for ( int i = 0; i < 4; i++){   
       duties[i] = 0;                    //Set all PWM to 0
       gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
     }
-  }else{
-      gpio_set_level(GPIO_NUM_15,1);
-  }
+//   }else{
+//       gpio_set_level(GPIO_NUM_15,1);
+//   }
 
   ESP_ERROR_CHECK( pwm_set_duties(duties) );
   ESP_ERROR_CHECK( pwm_start() );
@@ -160,9 +161,24 @@ void e_stop( const std_msgs::Int16& e_stop_flag )
   status_pub.publish(&status_msg);
 }
 
-ros::Subscriber<std_msgs::Int16> w_left_sub("/espchair/wheel_L", &pwm_update_L);
-ros::Subscriber<std_msgs::Int16> w_right_sub("/espchair/wheel_R", &pwm_update_R);
-ros::Subscriber<std_msgs::Int16> emergency_stop_sub("/espchair/emergency_stop", &e_stop);
+void e_recover( const std_msgs::Empty& msg )
+{
+  gpio_set_level(GPIO_NUM_15,1);
+  
+  ESP_ERROR_CHECK( pwm_set_duties(duties) );
+  ESP_ERROR_CHECK( pwm_start() );
+  
+  int msg_len = 100;
+  char message[msg_len];
+  snprintf(message, msg_len, "GOT EMERGENCY RECOVER SIGNAL, ENABLING MOTORS");
+  status_msg.data = message;
+  status_pub.publish(&status_msg);
+}
+
+ros::Subscriber<std_msgs::Int16> w_left_sub("/roboy/middleware/espchair/wheels/left", &pwm_update_L);
+ros::Subscriber<std_msgs::Int16> w_right_sub("/roboy/middleware/espchair/wheels/right", &pwm_update_R);
+ros::Subscriber<std_msgs::Empty> emergency_stop_sub("/roboy/middleware/espchair/emergency/stop", &e_stop);
+ros::Subscriber<std_msgs::Empty> emergency_recover_sub("/roboy/middleware/espchair/emergency/recover", &e_recover);
 
 
 void rosserial_setup()
@@ -172,6 +188,7 @@ void rosserial_setup()
   nh.subscribe(w_right_sub);
   nh.subscribe(w_left_sub);
   nh.subscribe(emergency_stop_sub);
+  nh.subscribe(emergency_recover_sub);
 }
 
 void rosserial_spinonce()
