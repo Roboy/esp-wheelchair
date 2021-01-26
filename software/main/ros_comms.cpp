@@ -1,5 +1,6 @@
 #include "driver/pwm.h"
 #include "driver/gpio.h"
+#include "driver/hw_timer.h"
 #include "ros.h"
 #include "std_msgs/String.h"
 #include "std_msgs/Int16.h"
@@ -80,6 +81,10 @@ void pwm_update_R( const std_msgs::Int16& drive_R )
 
   }
 
+  ESP_ERROR_CHECK( hw_timer_set_load_data(HW_TIMER_LOAD_TICKS) ); //Feed the timer
+
+  if ( !hw_timer_get_enable() )           //If timer was not running re-enable it
+    ESP_ERROR_CHECK( hw_timer_enable(1) );
 
   // ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
   // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_0 = %d", pwm_tmp, pwm_limit_val, duties[0]);
@@ -130,6 +135,10 @@ void pwm_update_L( const std_msgs::Int16& drive_L )
 
   }
 
+  ESP_ERROR_CHECK( hw_timer_set_load_data(HW_TIMER_LOAD_TICKS) ); //Feed the timer
+
+  if ( !hw_timer_get_enable() )           //If timer was not running re-enable it
+    ESP_ERROR_CHECK( hw_timer_enable(1) );
 
   // ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
   // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_0 = %d", pwm_tmp, pwm_limit_val, duties[0]);
@@ -183,6 +192,19 @@ ros::Subscriber<std_msgs::Empty> emergency_stop_sub("/roboy/middleware/espchair/
 ros::Subscriber<std_msgs::Empty> emergency_recover_sub("/roboy/middleware/espchair/emergency/recover", &e_recover);
 
 
+void hw_timer_callback(void *arg)
+{
+  ESP_ERROR_CHECK( hw_timer_enable(0) ); //Stop the timer
+
+  for ( int i = 0; i < 4; i++){       //Stop all motors
+    duties[i] = 0;                    //Set all PWM to 0
+    gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
+  }
+
+  ESP_ERROR_CHECK( pwm_set_duties(duties) );
+  ESP_ERROR_CHECK( pwm_start() );
+}
+
 void rosserial_setup()
 {
   nh.initNode();
@@ -191,6 +213,14 @@ void rosserial_setup()
   nh.subscribe(w_left_sub);
   nh.subscribe(emergency_stop_sub);
   nh.subscribe(emergency_recover_sub);
+
+  ESP_ERROR_CHECK( hw_timer_init(hw_timer_callback, NULL) );
+  ESP_ERROR_CHECK( hw_timer_set_intr_type(TIMER_LEVEL_INT) );
+  ESP_ERROR_CHECK( hw_timer_set_reload(false) );             //Operate in one-shot mode
+  ESP_ERROR_CHECK( hw_timer_set_load_data(HW_TIMER_LOAD_TICKS) );
+  ESP_ERROR_CHECK( hw_timer_set_clkdiv(HW_TIMER_DIV) );  //@80MHz should tick at 312.5 kHz
+
+
 }
 
 void rosserial_spinonce()

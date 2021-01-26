@@ -26,6 +26,7 @@
 
 #include "driver/gpio.h"
 #include "driver/pwm.h"
+#include "driver/hw_timer.h"
 
 #include "sdkconfig.h"
 #include "ros_comms.h"
@@ -94,9 +95,20 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
                 /*Switch to 802.11 bgn mode */
                 esp_wifi_set_protocol(ESP_IF_WIFI_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N);
             }
-            esp_wifi_connect();
+
+            for ( int i = 0; i < 4; i++){       //Stop motors on connection loss
+              duties[i] = 0;                    //Set all PWM to 0
+              gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
+            }
+
+            ESP_ERROR_CHECK( pwm_set_duties(duties) );
+            ESP_ERROR_CHECK( pwm_start() );
+
+            esp_wifi_connect();                 //Try to reconnect
             xEventGroupClearBits(wifi_event_group, WIFI_CONNECTED_BIT);
+            ESP_LOGI(TAG,"Retrying connection to AP");
             break;
+
         default:
             break;
     }
@@ -250,8 +262,11 @@ void app_main()
 
     // Spinning ROS
     // xTaskCreate(&ros_spin_task,"ros_spin_task",4096,NULL,4,NULL);
+
+    // Enable hardware timer as ROS communication watchdog
+    ESP_ERROR_CHECK( hw_timer_enable(1) );
     
-    for (;;) {    // Spin ROS every 1 ms
+    for (;;) {    // Spin ROS every ~1 ms -ish
         rosserial_spinonce();
         vTaskDelay(1 / portTICK_PERIOD_MS);
     }
