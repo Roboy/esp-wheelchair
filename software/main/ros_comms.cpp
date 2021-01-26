@@ -139,18 +139,14 @@ void pwm_update_L( const std_msgs::Int16& drive_L )
 
 void e_stop( const std_msgs::Empty& e_stop_flag )
 {
-//   int tmp = e_stop_flag.data;
   int msg_len = 100;
   char message[msg_len];
-  gpio_set_level(GPIO_NUM_15,0);    //Disconnect main relay
-//   if ( tmp != 0 ) {
-    for ( int i = 0; i < 4; i++){   
-      duties[i] = 0;                    //Set all PWM to 0
-      gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
-    }
-//   }else{
-//       gpio_set_level(GPIO_NUM_15,1);
-//   }
+  gpio_set_level(GPIO_NUM_15,0);      //Disconnect main relay
+
+  for ( int i = 0; i < 4; i++){   
+    duties[i] = 0;                    //Set all PWM to 0
+    gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
+  }
 
   ESP_ERROR_CHECK( pwm_set_duties(duties) );
   ESP_ERROR_CHECK( pwm_start() );
@@ -163,13 +159,19 @@ void e_stop( const std_msgs::Empty& e_stop_flag )
 
 void e_recover( const std_msgs::Empty& msg )
 {
-  gpio_set_level(GPIO_NUM_15,1);
+  int msg_len = 100;
+  char message[msg_len];
+
+  for ( int i = 0; i < 4; i++){       //Ensure pwm=0 at start
+    duties[i] = 0;                    //Set all PWM to 0
+    gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
+  }
+
+  gpio_set_level(GPIO_NUM_15,1);      //Enable main relay
   
   ESP_ERROR_CHECK( pwm_set_duties(duties) );
   ESP_ERROR_CHECK( pwm_start() );
   
-  int msg_len = 100;
-  char message[msg_len];
   snprintf(message, msg_len, "GOT EMERGENCY RECOVER SIGNAL, ENABLING MOTORS");
   status_msg.data = message;
   status_pub.publish(&status_msg);

@@ -198,6 +198,9 @@ void app_main()
 
     // Init wifi and network stack
     wifi_init_sta();
+
+    taskENTER_CRITICAL();  // Disable interrupts while setting up tasks and config
+
     // xTaskCreate(&status_task,"status_task",2048,NULL,2,NULL);
     // printf("status_task starting\n");
 
@@ -236,6 +239,8 @@ void app_main()
     pwm_start();
     printf("PWM online\n");
 
+    taskEXIT_CRITICAL();  // Reenable interrupts
+    
     // Init ROS
     rosserial_setup();
 
@@ -246,15 +251,11 @@ void app_main()
     // Spinning ROS
     // xTaskCreate(&ros_spin_task,"ros_spin_task",4096,NULL,4,NULL);
     
-    for (int i = 0; ; i++) {
-        // printf("Spinning on spin: %d\n", i);
+    for (;;) {    // Spin ROS every 1 ms
         rosserial_spinonce();
         vTaskDelay(1 / portTICK_PERIOD_MS);
     }
 
-    // for ( ;; )      // Main idle loop
-    // {
-    // }
 
     printf("Restarting now. (Not really, just exited the main loop though!)\n");
     // fflush(stdout);
