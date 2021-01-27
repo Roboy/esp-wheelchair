@@ -14,7 +14,7 @@ ros::NodeHandle nh;
 
 std_msgs::String status_msg;
 
-ros::Publisher status_pub("/espchair/status", &status_msg);
+ros::Publisher status_pub("/roboy/pinky/middleware/espchair/status", &status_msg);
 
 // Init PWM Parameters
 
@@ -209,10 +209,10 @@ void e_recover( const std_msgs::Empty& msg )
   status_pub.publish(&status_msg);
 }
 
-ros::Subscriber<std_msgs::Int16> w_left_sub("/roboy/middleware/espchair/wheels/left", &pwm_update_L);
-ros::Subscriber<std_msgs::Int16> w_right_sub("/roboy/middleware/espchair/wheels/right", &pwm_update_R);
-ros::Subscriber<std_msgs::Empty> emergency_stop_sub("/roboy/middleware/espchair/emergency/stop", &e_stop);
-ros::Subscriber<std_msgs::Empty> emergency_recover_sub("/roboy/middleware/espchair/emergency/recover", &e_recover);
+ros::Subscriber<std_msgs::Int16> w_left_sub("/roboy/pinky/middleware/espchair/wheels/left", &pwm_update_L);
+ros::Subscriber<std_msgs::Int16> w_right_sub("/roboy/pinky/middleware/espchair/wheels/right", &pwm_update_R);
+ros::Subscriber<std_msgs::Empty> emergency_stop_sub("/roboy/pinky/middleware/espchair/emergency/stop", &e_stop);
+ros::Subscriber<std_msgs::Empty> emergency_recover_sub("/roboy/pinky/middleware/espchair/emergency/recover", &e_recover);
 
 
 void timer_callback(void *arg)
