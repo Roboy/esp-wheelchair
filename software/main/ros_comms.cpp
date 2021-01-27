@@ -86,13 +86,11 @@ void pwm_update_R( const std_msgs::Int16& drive_R )
   }
 
   ESP_ERROR_CHECK( esp_timer_stop(timer_handle) ); //Feed the timer
-  ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, 5000000) );
-
-  //if ( !hw_timer_get_enable() )           //If timer was not running re-enable it
-  //  ESP_ERROR_CHECK( hw_timer_enable(1) );
+  ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, TIMEOUT_IN_US) );
 
   // ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
   // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_0 = %d", pwm_tmp, pwm_limit_val, duties[0]);
+
   if ( !emergency_stop_active )
   {
     ESP_ERROR_CHECK( pwm_set_duties(duties) );
@@ -150,13 +148,11 @@ void pwm_update_L( const std_msgs::Int16& drive_L )
   }
 
   ESP_ERROR_CHECK( esp_timer_stop(timer_handle) ); //Feed the timer
-  ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, 5000000) );
-
-  //if ( !hw_timer_get_enable() )           //If timer was not running re-enable it
-  //  ESP_ERROR_CHECK( hw_timer_enable(1) );
+  ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, TIMEOUT_IN_US) );
 
   // ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
   // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_0 = %d", pwm_tmp, pwm_limit_val, duties[0]);
+
   if ( !emergency_stop_active )
   {
     ESP_ERROR_CHECK( pwm_set_duties(duties) );
@@ -176,7 +172,6 @@ void e_stop( const std_msgs::Empty& e_stop_flag )
   gpio_set_level(GPIO_NUM_15,0);      //Disconnect main relay
 
   emergency_stop_active = true;
-  // ESP_ERROR_CHECK( hw_timer_enable(0) ); //Stop the timer
 
   for ( int i = 0; i < 4; i++){   
     duties[i] = 0;                    //Set all PWM to 0
@@ -198,7 +193,6 @@ void e_recover( const std_msgs::Empty& msg )
   char message[msg_len];
 
   emergency_stop_active = false;
-  // ESP_ERROR_CHECK( hw_timer_enable(1) ); //Restart the timer
 
   for ( int i = 0; i < 4; i++){       //Ensure pwm=0 at start
     duties[i] = 0;                    //Set all PWM to 0
@@ -223,7 +217,6 @@ ros::Subscriber<std_msgs::Empty> emergency_recover_sub("/roboy/middleware/espcha
 
 void timer_callback(void *arg)
 {
-  // ESP_ERROR_CHECK( hw_timer_enable(0) ); //Stop the timer
   ESP_LOGI(TAG, "Timer expired!");
 
   for ( int i = 0; i < 4; i++){       //Stop all motors

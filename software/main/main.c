@@ -247,7 +247,6 @@ void app_main()
     //Init PWM
     pwm_init(PWM_PERIOD, duties, N_PWM_PINS, pwm_pins);
     pwm_set_phases(phases);
-    // pwm_set_channel_invert(0b0000);
     pwm_start();
 
     taskEXIT_CRITICAL();  // Reenable interrupts
@@ -264,8 +263,8 @@ void app_main()
     // Spinning ROS
     // xTaskCreate(&ros_spin_task,"ros_spin_task",4096,NULL,4,NULL);
 
-    // Enable hardware timer as ROS communication watchdog
-    ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, 500000) );
+    // Enable timer as ROS communication watchdog
+    ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, TIMEOUT_IN_US) );
     
     for (;;) {    // Spin ROS every ~1 ms -ish
         rosserial_spinonce();

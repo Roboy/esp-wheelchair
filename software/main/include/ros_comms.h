@@ -5,12 +5,9 @@
 extern "C" {
 #endif
 
-// HW timer parameters
+// Timer parameters
 
-#define TIMEOUT_IN_MS 500UL
-#define HW_TIMER_DIV TIMER_CLKDIV_256
-#define HW_TIMER_FREQ TIMER_BASE_CLK/HW_TIMER_DIV
-#define HW_TIMER_LOAD_TICKS (TIMEOUT_IN_MS*HW_TIMER_FREQ)/1000
+#define TIMEOUT_IN_US 500000UL
 
 // PWM Parameters
 
