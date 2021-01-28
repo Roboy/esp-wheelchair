@@ -24,7 +24,7 @@ from geometry_msgs.msg import Twist
 from std_msgs.msg import Int16
 
 PWM_MIN = 5
-PWMRANGE = 30
+PWMRANGE = 40
 
 rospy.init_node("wheelchair_twist_converter")
 
@@ -39,7 +39,7 @@ def mapPwm(x, out_min, out_max):
 
 def cb(msg):
 	if not rospy.get_param('wheelchair_emergency_stopped'):
-		rospy.logwarn_throttle(1, "Emergency stop active. Ignoring cmd_vel")
+		rospy.loginfo_throttle(5, "Publishing pwm..")
 		x = max(min(msg.linear.x, 1.0), -1.0)
 		z = max(min(msg.angular.z, 1.0), -1.0)
 
@@ -51,6 +51,8 @@ def cb(msg):
 
 		pub_l.publish(sign(l)*lPwm)
 		pub_r.publish(sign(r)*rPwm)
+	else:
+		rospy.logwarn_throttle(1, "Emergency stop active. Ignoring cmd_vel")
 
 
 
