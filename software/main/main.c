@@ -26,7 +26,7 @@
 
 #include "driver/gpio.h"
 #include "driver/pwm.h"
-#include "driver/hw_timer.h"
+#include "esp_timer.h"
 
 #include "sdkconfig.h"
 #include "ros_comms.h"
@@ -35,7 +35,7 @@
 #define HOST_IP_ADDR "192.168.0.105"
 #define PORT 8000
 
-#define ESP_WIFI_SSID       "roboy"
+#define ESP_WIFI_SSID       "roboy-robot"
 #define ESP_WIFI_PASS       "wiihackroboy"
 #define ESP_MAXIMUM_RETRY   10
 #define ESP_HOSTNAME        "wifeel-chair"
@@ -247,11 +247,11 @@ void app_main()
     //Init PWM
     pwm_init(PWM_PERIOD, duties, N_PWM_PINS, pwm_pins);
     pwm_set_phases(phases);
-    // pwm_set_channel_invert(0b0000);
     pwm_start();
-    printf("PWM online\n");
 
     taskEXIT_CRITICAL();  // Reenable interrupts
+
+    printf("PWM online\n");
     
     // Init ROS
     rosserial_setup();
@@ -263,13 +263,11 @@ void app_main()
     // Spinning ROS
     // xTaskCreate(&ros_spin_task,"ros_spin_task",4096,NULL,4,NULL);
 
-    // Enable hardware timer as ROS communication watchdog
-    ESP_ERROR_CHECK( hw_timer_enable(1) );
+    // Enable timer as ROS communication watchdog
+    ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, TIMEOUT_IN_US) );
     
     for (;;) {    // Spin ROS every ~1 ms -ish
         rosserial_spinonce();
-        if ( !hw_timer_get_enable() ) 
-          ESP_LOGI(TAG, "Timer ran out, stopped.");
         vTaskDelay(1 / portTICK_PERIOD_MS);
     }
 

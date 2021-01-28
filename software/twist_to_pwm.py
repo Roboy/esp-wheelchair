@@ -28,8 +28,8 @@ PWMRANGE = 40
 
 rospy.init_node("wheelchair_twist_converter")
 
-pub_l = rospy.Publisher("/roboy/middleware/espchair/wheels/left", Int16, queue_size=1)
-pub_r = rospy.Publisher("/roboy/middleware/espchair/wheels/right", Int16, queue_size=1)
+pub_l = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/left", Int16, queue_size=1)
+pub_r = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/right", Int16, queue_size=1)
 
 sign = lambda a: (a>0) - (a<0)
 

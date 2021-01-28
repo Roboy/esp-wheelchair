@@ -1,6 +1,6 @@
 #include "driver/pwm.h"
 #include "driver/gpio.h"
-#include "driver/hw_timer.h"
+#include "esp_timer.h"
 #include "ros.h"
 #include "std_msgs/String.h"
 #include "std_msgs/Int16.h"
@@ -14,7 +14,7 @@ ros::NodeHandle nh;
 
 std_msgs::String status_msg;
 
-ros::Publisher status_pub("/espchair/status", &status_msg);
+ros::Publisher status_pub("/roboy/pinky/middleware/espchair/status", &status_msg);
 
 // Init PWM Parameters
 
@@ -28,6 +28,8 @@ static const int pwm_lim_top = pwm_limit_val;
 static const int pwm_lim_bot = -1*(pwm_limit_val);
 
 static bool emergency_stop_active = false;
+
+esp_timer_handle_t timer_handle;
 
 // GPIO List
 
@@ -83,13 +85,12 @@ void pwm_update_R( const std_msgs::Int16& drive_R )
 
   }
 
-  ESP_ERROR_CHECK( hw_timer_set_load_data(HW_TIMER_LOAD_TICKS) ); //Feed the timer
-
-  if ( !hw_timer_get_enable() )           //If timer was not running re-enable it
-    ESP_ERROR_CHECK( hw_timer_enable(1) );
+  ESP_ERROR_CHECK( esp_timer_stop(timer_handle) ); //Feed the timer
+  ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, TIMEOUT_IN_US) );
 
   // ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
   // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_0 = %d", pwm_tmp, pwm_limit_val, duties[0]);
+
   if ( !emergency_stop_active )
   {
     ESP_ERROR_CHECK( pwm_set_duties(duties) );
@@ -146,13 +147,12 @@ void pwm_update_L( const std_msgs::Int16& drive_L )
 
   }
 
-  ESP_ERROR_CHECK( hw_timer_set_load_data(HW_TIMER_LOAD_TICKS) ); //Feed the timer
-
-  if ( !hw_timer_get_enable() )           //If timer was not running re-enable it
-    ESP_ERROR_CHECK( hw_timer_enable(1) );
+  ESP_ERROR_CHECK( esp_timer_stop(timer_handle) ); //Feed the timer
+  ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, TIMEOUT_IN_US) );
 
   // ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
   // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_0 = %d", pwm_tmp, pwm_limit_val, duties[0]);
+
   if ( !emergency_stop_active )
   {
     ESP_ERROR_CHECK( pwm_set_duties(duties) );
@@ -172,7 +172,6 @@ void e_stop( const std_msgs::Empty& e_stop_flag )
   gpio_set_level(GPIO_NUM_15,0);      //Disconnect main relay
 
   emergency_stop_active = true;
-  ESP_ERROR_CHECK( hw_timer_enable(0) ); //Stop the timer
 
   for ( int i = 0; i < 4; i++){   
     duties[i] = 0;                    //Set all PWM to 0
@@ -194,7 +193,6 @@ void e_recover( const std_msgs::Empty& msg )
   char message[msg_len];
 
   emergency_stop_active = false;
-  ESP_ERROR_CHECK( hw_timer_enable(1) ); //Restart the timer
 
   for ( int i = 0; i < 4; i++){       //Ensure pwm=0 at start
     duties[i] = 0;                    //Set all PWM to 0
@@ -211,15 +209,15 @@ void e_recover( const std_msgs::Empty& msg )
   status_pub.publish(&status_msg);
 }
 
-ros::Subscriber<std_msgs::Int16> w_left_sub("/roboy/middleware/espchair/wheels/left", &pwm_update_L);
-ros::Subscriber<std_msgs::Int16> w_right_sub("/roboy/middleware/espchair/wheels/right", &pwm_update_R);
-ros::Subscriber<std_msgs::Empty> emergency_stop_sub("/roboy/middleware/espchair/emergency/stop", &e_stop);
-ros::Subscriber<std_msgs::Empty> emergency_recover_sub("/roboy/middleware/espchair/emergency/recover", &e_recover);
+ros::Subscriber<std_msgs::Int16> w_left_sub("/roboy/pinky/middleware/espchair/wheels/left", &pwm_update_L);
+ros::Subscriber<std_msgs::Int16> w_right_sub("/roboy/pinky/middleware/espchair/wheels/right", &pwm_update_R);
+ros::Subscriber<std_msgs::Empty> emergency_stop_sub("/roboy/pinky/middleware/espchair/emergency/stop", &e_stop);
+ros::Subscriber<std_msgs::Empty> emergency_recover_sub("/roboy/pinky/middleware/espchair/emergency/recover", &e_recover);
 
 
-void hw_timer_callback(void *arg)
+void timer_callback(void *arg)
 {
-  ESP_ERROR_CHECK( hw_timer_enable(0) ); //Stop the timer
+  ESP_LOGI(TAG, "Timer expired!");
 
   for ( int i = 0; i < 4; i++){       //Stop all motors
     duties[i] = 0;                    //Set all PWM to 0
@@ -232,6 +230,11 @@ void hw_timer_callback(void *arg)
 
 void rosserial_setup()
 {
+  const esp_timer_create_args_t timer_cfg = {
+    .callback = &timer_callback,
+    .name = "wdt_pwm"
+  };
+
   nh.initNode();
   nh.advertise(status_pub);
   nh.subscribe(w_right_sub);
@@ -239,11 +242,9 @@ void rosserial_setup()
   nh.subscribe(emergency_stop_sub);
   nh.subscribe(emergency_recover_sub);
 
-  ESP_ERROR_CHECK( hw_timer_init(hw_timer_callback, NULL) );
-  ESP_ERROR_CHECK( hw_timer_set_intr_type(TIMER_LEVEL_INT) );
-  ESP_ERROR_CHECK( hw_timer_set_reload(false) );             //Operate in one-shot mode
-  ESP_ERROR_CHECK( hw_timer_set_load_data(HW_TIMER_LOAD_TICKS) );
-  ESP_ERROR_CHECK( hw_timer_set_clkdiv(HW_TIMER_DIV) );  //@80MHz should tick at 312.5 kHz
+  ESP_ERROR_CHECK( esp_timer_init() );
+
+  ESP_ERROR_CHECK( esp_timer_create(&timer_cfg, &timer_handle) );
 
 
 }
