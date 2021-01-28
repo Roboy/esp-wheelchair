@@ -12,9 +12,11 @@ static const char* TAG = "ros-comms";
 // ROSserial elements
 ros::NodeHandle nh;
 
-std_msgs::String status_msg;
+static std_msgs::String status_msg;
+static std_msgs::Int16 heartbeat_msg;
 
 ros::Publisher status_pub("/roboy/pinky/middleware/espchair/status", &status_msg);
+ros::Publisher heartbeat_pub("/roboy/pinky/middleware/espchair/heartbeat", &heartbeat_msg);
 
 // Init PWM Parameters
 
@@ -237,6 +239,7 @@ void rosserial_setup()
 
   nh.initNode();
   nh.advertise(status_pub);
+  nh.advertise(heartbeat_pub);
   nh.subscribe(w_right_sub);
   nh.subscribe(w_left_sub);
   nh.subscribe(emergency_stop_sub);
@@ -245,20 +248,19 @@ void rosserial_setup()
   ESP_ERROR_CHECK( esp_timer_init() );
 
   ESP_ERROR_CHECK( esp_timer_create(&timer_cfg, &timer_handle) );
-
-
 }
 
 void rosserial_spinonce()
 {
-  static int i = 0;
+  static uint32_t n = 0;
 
-  if ( i >= 10 )
+  if ( !(n % 100) )   // Publish every 100ms or so
   {
-    i = 0;
+    heartbeat_msg.data = (uint16_t) emergency_stop_active;
+    heartbeat_pub.publish(&heartbeat_msg);
   }
 
-  i++;
+  n++;
 
   nh.spinOnce();
 }
