@@ -35,7 +35,7 @@
 #define HOST_IP_ADDR "192.168.0.105"
 #define PORT 8000
 
-#define ESP_WIFI_SSID       "roboy"
+#define ESP_WIFI_SSID       "roboy-robot"
 #define ESP_WIFI_PASS       "wiihackroboy"
 #define ESP_MAXIMUM_RETRY   10
 #define ESP_HOSTNAME        "wifeel-chair"
