@@ -38,4 +38,5 @@ First of all, open the wheelchair controller box (the one with the joystick) by 
 
 ### Important! Make sure before flashing code to the ESP that the wheelchair is NOT powered on, that means, the cable to the battery should be unplugged at all times when flashing.
 
+## Flashing
 After compilation is succesful, you can flash the code with 'make flash', but before that the esp8266 needs to boot in flash mode. For this you will need to press the BOOT button on the esp itself and at the same time press and release the RESET button. The buttons are located under the esp, the heatshrink has a cutout for them. (Pictures to follow)
