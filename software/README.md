@@ -1,34 +1,38 @@
 # Prerequisites and installation
 * install ros
-* create a workspace 
+* create a workspace
 ```
 mkdir roboy-wheelchair
 cd roboy-wheelchair
 mkdir src
 ```
-* clone 
+* clone
   https://github.com/jcmvbkbc/crosstool-NG.git
   https://github.com/Roboy/esp-wheelchair.git
-* cd src 
+* cd src
   https://github.com/ludwigthemad/rosserial_esp32.git
 
-* build crosstool-NG as they describe it 
+* build crosstool-NG as they describe it
 * source /opt/ros/melodic/setup.bash
   go into roboy-wheelchair/. directory
 ```
-catkin_make 
+catkin_make
 source ./devel/setup.bash
 rosrun rosserial_esp32 make_libraries.py $IDF_PATH/components/
 ```
-* 
+*
 ```
 export IDF_PATH=~/esp/ESP8266_RTOS_SDK
 export PATH=$PATH:${IDF_PATH%/*}/xtensa-lx106-elf/bin
 export PATH=$PATH:${IDF_PATH%/*}/ESP8266_RTOS_SDK/tools
 export PATH=$PATH:${IDF_PATH%/*}/ESP8266_RTOS_SDK/components/esptool_py/esptool
 ```
+* To config the ETH interface
+```
+idf.py menuconfig
+```
 
-  
+
 
 First of all you need the [ESP8266 RTOS SDK](https://github.com/espressif/ESP8266_RTOS_SDK) installed on your system (More info about the installation procedure on their webpage).
 Then make sure you have the tools from the package above and the xtensa-lx106-elf binaries on your PATH variable and that IDF_PATH points correctly to its installation directory.
@@ -72,11 +76,11 @@ First of all, open the wheelchair controller box (the one with the joystick) by 
 After compilation is succesful, you can flash the code with 'make flash', but before that the esp8266 needs to boot in flash mode. For this you will need to press the BOOT button on the esp itself and at the same time press and release the RESET button. The buttons are located under the esp, the heatshrink has a cutout for them. (Pictures to follow)
 
 
-# Known Issues 
+# Known Issues
 ## crosstools-NG
-won't build on Ubuntu 18.04 with gperf=3.1 due to a bug in the crosstool-ng repo 
-* nano crosstool-ng/kconfig/zconf.hash.c 
-then search for 
+won't build on Ubuntu 18.04 with gperf=3.1 due to a bug in the crosstool-ng repo
+* nano crosstool-ng/kconfig/zconf.hash.c
+then search for
 kconf_id_lookup (register const char *str, register size_t len)
 and change to
 kconf_id_lookup (register const char *str, register unsigned int len)

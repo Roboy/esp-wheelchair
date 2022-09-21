@@ -1,0 +1,157 @@
+#include <stdio.h>
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "freertos/event_groups.h"
+
+#include "esp_system.h"
+#include "esp_log.h"
+#include "esp_event.h"
+#include "esp_event_loop.h"
+#include "nvs_flash.h"
+
+
+//#include "esp_netif.h"
+//#include "esp_eth.h"
+
+//#define CONFIG_ETH_USE_SPI_ETHERNET 1
+
+//#if CONFIG_ETH_USE_SPI_ETHERNET
+//#include "driver/spi_master.h"
+//#endif // CONFIG_ETH_USE_SPI_ETHERNET
+
+
+#include "sys/socket.h"
+#include "lwip/err.h"
+#include "lwip/sys.h"
+
+#include "driver/gpio.h"
+#include "driver/pwm.h"
+#include "esp_timer.h"
+#include "esp_sleep.h"
+
+#include "sdkconfig.h"
+#include "ros_comms.h"
+
+// WIFI and Network config
+#include "esp_netif.h"
+#include "tcpip_adapter.h"
+//#include "esp_eth.h"
+
+//spi_master not available
+//#include "driver/spi_master.h"
+#include "driver/spi.h"
+
+#include "eth_handler.h"
+
+
+//=====[network basci Parameters]====
+#define HOST_IP_ADDR  "192.168.0.105"
+#define PORT          8000
+#define ESP_HOSTNAME  "esp-chair"
+tcpip_adapter_ip_info_t ipInfo;
+//const uint8_t macVendor[6] = {0x98,0x76,0xb6,0x11,0xa1,0x43};
+uint8_t macInfo[6];
+
+static const char *TAG = "eth_example";
+
+
+/** Event handler for Ethernet events */
+/** Event handler for Ethernet events */
+static void eth_event_handler(void *arg, esp_event_base_t event_base,
+                              int32_t event_id, void *event_data)
+{
+    uint8_t mac_addr[6] = {0};
+    /* we can get the ethernet driver handle from event data */
+    esp_eth_handle_t eth_handle = *(esp_eth_handle_t *)event_data;
+
+    switch (event_id) {
+    case ETHERNET_EVENT_CONNECTED:
+        esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac_addr);
+        ESP_LOGI(TAG, "Ethernet Link Up");
+        ESP_LOGI(TAG, "Ethernet HW Addr %02x:%02x:%02x:%02x:%02x:%02x",
+                 mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+        break;
+    case ETHERNET_EVENT_DISCONNECTED:
+        ESP_LOGI(TAG, "Ethernet Link Down");
+        break;
+    case ETHERNET_EVENT_START:
+        ESP_LOGI(TAG, "Ethernet Started");
+        break;
+    case ETHERNET_EVENT_STOP:
+        ESP_LOGI(TAG, "Ethernet Stopped");
+        break;
+    default:
+        break;
+    }
+}
+
+/** Event handler for IP_EVENT_ETH_GOT_IP */
+static void got_ip_event_handler(void *arg, esp_event_base_t event_base,
+                                 int32_t event_id, void *event_data)
+{
+    ip_event_got_ip_t *event = (ip_event_got_ip_t *) event_data;
+    const tcpip_adapter_ip_info_t *ip_info = &event->ip_info;
+
+    ESP_LOGI(TAG, "Ethernet Got IP Address");
+    ESP_LOGI(TAG, "~~~~~~~~~~~");
+    ESP_LOGI(TAG, "ETHIP:" IPSTR, IP2STR(&ip_info->ip));
+    ESP_LOGI(TAG, "ETHMASK:" IPSTR, IP2STR(&ip_info->netmask));
+    ESP_LOGI(TAG, "ETHGW:" IPSTR, IP2STR(&ip_info->gw));
+    ESP_LOGI(TAG, "~~~~~~~~~~~");
+}
+
+
+
+void app_main(void)
+{
+  printf("Starting");
+
+  // Initialize TCP/IP network interface (should be called only once in application)
+  esp_err_t err;
+  tcpip_adapter_init();
+  ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+  eth_config_t config = DEFAULT_ETHERNET_PHY_CONFIG;
+  config.phy_addr = CONFIG_PHY_ADDRESS;
+  config.gpio_config = eth_gpio_config_rmii;
+  config.tcpip_input = tcpip_adapter_eth_input;
+  config.clock_mode = CONFIG_PHY_CLOCK_MODE;
+
+  ESP_ERROR_CHECK(tcpip_adapter_set_default_eth_handlers());
+  ESP_ERROR_CHECK(esp_event_handler_register(ETH_EVENT, ESP_EVENT_ANY_ID, &eth_event_handler, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_ETH_GOT_IP, &got_ip_event_handler, NULL));
+
+  /*
+  err = esp_event_handler_register(ETH_EVENT, SYSTEM_EVENT_ETH_START, handleETH_ap_start, NULL);
+  if (err != ESP_OK) {
+        printf("FAIIILLL");
+    }
+    */
+
+  // Register user defined event handers
+  //esp_event_handler_register(ETH_EVENT, ESP_EVENT_ANY_ID, &eth_event_handler, NULL);
+  //esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &got_ip_event_handler, NULL);
+
+  for (;;) {    // Spin ROS every ~1 ms -ish
+      esp_sleep_enable_timer_wakeup(1000);
+      printf(".");
+  }
+
+
+  //ESP_ERROR_CHECK(tcpip_adapter_start(TCPIP_ADAPTER_IF_ETH, &macVendor, &ipInfo));
+
+  /*esp_netif_config_t cfg = ESP_NETIF_DEFAULT_ETH();
+  esp_netif_t *eth_netif = esp_netif_new(&cfg);
+  // Set default handlers to process TCP/IP stuffs
+  ESP_ERROR_CHECK(esp_eth_set_default_handlers(eth_netif));
+  // Register user defined event handers
+  ESP_ERROR_CHECK(esp_event_handler_register(ETH_EVENT, ESP_EVENT_ANY_ID, &eth_event_handler, NULL));
+  ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_ETH_GOT_IP, &got_ip_event_handler, NULL));
+
+  eth_mac_config_t mac_config = ETH_MAC_DEFAULT_CONFIG();
+  eth_phy_config_t phy_config = ETH_PHY_DEFAULT_CONFIG();
+  */
+  ESP_LOGI(TAG, "Done...");
+}

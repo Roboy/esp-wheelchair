@@ -3,7 +3,6 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := wifeel-chair
+PROJECT_NAME := esp-chair
 
 include $(IDF_PATH)/make/project.mk
-
