@@ -13,13 +13,14 @@ extern "C" {
 
 #define PWMLIMIT  99U
 #define PWM_PERIOD 100U
-#define N_PWM_PINS 4
+#define N_PWM_PINS 2
+
 
 extern uint32_t duties[N_PWM_PINS];
 
 extern float phases[N_PWM_PINS];
             
-extern const gpio_num_t gpio_pins[5];
+extern const gpio_num_t gpio_pins[4];
 
 extern esp_timer_handle_t timer_handle;
 
