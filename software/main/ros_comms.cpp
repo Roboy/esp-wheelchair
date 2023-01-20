@@ -11,9 +11,12 @@
 static const char* TAG = "ros-comms";
 
 #define GPIO_PWM_R GPIO_NUM_14 
-#define GPIO_PWM_L GPIO_NUM_12
-#define GPIO_DIR_R GPIO_NUM_13
-#define GPIO_DIR_L GPIO_NUM_15
+#define GPIO_DIR1_R GPIO_NUM_13 
+
+#define GPIO_PWM_L GPIO_NUM_12 // pwm-pwm
+#define GPIO_PWM2_L GPIO_NUM_15
+#define GPIO_EN1_L GPIO_NUM_4
+#define GPIO_EN2_L GPIO_NUM_5 
 
 
 
@@ -26,9 +29,9 @@ ros::Publisher status_pub("/roboy/pinky/middleware/espchair/status", &status_msg
 
 // Init PWM Parameters
 
-uint32_t duties[N_PWM_PINS] = { 0, 0 };
+uint32_t duties[N_PWM_PINS] = { 0, 0, 0};
 
-float phases[N_PWM_PINS] = { 0, 0 };
+float phases[N_PWM_PINS] = { 0, 0, 0};
 
 static const uint32_t pwm_limit_val = PWMLIMIT;
 
@@ -40,11 +43,15 @@ static bool emergency_stop_active = false;
 esp_timer_handle_t timer_handle;
 
 // GPIO List
-const gpio_num_t gpio_pins[4] = {
+const gpio_num_t gpio_pins[6] = {
   GPIO_PWM_R, 
-  GPIO_DIR_L,
-  GPIO_DIR_R,
-  GPIO_PWM_L  
+  GPIO_DIR1_R,
+  
+  GPIO_PWM_L,
+  GPIO_PWM2_L,
+  GPIO_EN1_L,
+  GPIO_EN2_L
+    
 };
 
 // const gpio_num_t gpio_pins[4] = {
@@ -125,17 +132,22 @@ void pwm_update_R( const std_msgs::Int16& drive_R )
     
     //duties[2] = 0;
     duties[0] = pwm_tmp;
+    gpio_set_level(GPIO_DIR1_R,0);
+    // gpio_set_level(GPIO_DIR2_R,1);
 
-    //gpio_set_level(gpio_pins[0],0);
-    gpio_set_level(gpio_pins[2],0);
+    // //gpio_set_level(gpio_pins[0],0);
+    // gpio_set_level(gpio_pins[2],0);
 
   }else{
     pwm_tmp *= -1;
     // //duties[0] = 0;
     duties[0] = pwm_tmp;
+    
+    gpio_set_level(GPIO_DIR1_R,1);
+    // gpio_set_level(GPIO_DIR2_R,0);
 
     // gpio_set_level(gpio_pins[0],1);
-    gpio_set_level(gpio_pins[2],1);
+    // gpio_set_level(gpio_pins[2],1);
 
   }
 
@@ -152,7 +164,8 @@ void pwm_update_R( const std_msgs::Int16& drive_R )
     ESP_ERROR_CHECK( pwm_start() );
   } else {
     duties[0] = 0;
-     duties[1] = 0;                  //Set all PWM to 0
+     duties[1] = 0;    
+     duties[2]=0;              //Set all PWM to 0
     for ( int i = 0; i < 4; i++){       //Ensure pwm=0
       
       gpio_set_level(gpio_pins[i],0);   //Disable all low side switches
@@ -163,7 +176,7 @@ void pwm_update_R( const std_msgs::Int16& drive_R )
 
 void pwm_update_L( const std_msgs::Int16& drive_L )
 {
-  int pwm_tmp = drive_L.data;
+  int pwm_tmp = drive_L.data*-1;//*0.889; // fix, since the left motor is 91 RPM and right is 80 RPM
   int msg_len = 100;
   char message[msg_len];
   snprintf(message, msg_len, "Got motor left value: %d\n", pwm_tmp);
@@ -187,29 +200,40 @@ void pwm_update_L( const std_msgs::Int16& drive_L )
     status_pub.publish(&status_msg);
   }
 
-  
+  // hardcoded direction for now
+  //hoping the the other pin is low by default
+  //gpio_set_level(GPIO_NUM_15, 1);
+
+
+  // PWM-PWM mode
   if (pwm_tmp >= 0 )    // Direction reversal
   {
     duties[1] = pwm_tmp;
+    duties[2] = 0;
+    // gpio_set_level(GPIO_DIR1_L,1);
+    // gpio_set_level(GPIO_DIR2_L,0);
+    //duties[2] = 0;
     // gpio_set_level(gpio_pins[1],0);
-    gpio_set_level(gpio_pins[1],0);
+    //gpio_set_level(gpio_pins[1],0);
 
   }else{              
 
     pwm_tmp *= -1;
-    
-    duties[1] = pwm_tmp;
-
+    duties[1] = 0;
+    duties[2] = pwm_tmp;
+    // gpio_set_level(GPIO_DIR1_L,0);
+    // gpio_set_level(GPIO_DIR2_L,1);
+    //duties[2] = pwm_tmp;
     // gpio_set_level(gpio_pins[0],1);
-    gpio_set_level(gpio_pins[1],1);
+    //gpio_set_level(gpio_pins[1],1);
 
   }
 
   // ESP_ERROR_CHECK( esp_timer_stop(timer_handle) ); //Feed the timer
   // ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, TIMEOUT_IN_US) );
 
-  ESP_LOGI(TAG, "duties0: %d, duties1: %d, ",duties[0],duties[1]);
-  ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_1 = %d", pwm_tmp, pwm_limit_val, duties[1]);
+  // ESP_LOGI(TAG, "duties0: %d, duties1: %d, ",duties[0],duties[1]);
+  // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_1 = %d", pwm_tmp, pwm_limit_val, duties[1]);
 
   if ( !emergency_stop_active )
   {
@@ -217,7 +241,7 @@ void pwm_update_L( const std_msgs::Int16& drive_L )
     ESP_ERROR_CHECK( pwm_start() );
   } else {
      duties[0] = 0;
-     duties[1] = 0;                    //Set all PWM to 0
+     duties[1] = 0;      
     for ( int i = 0; i < 4; i++){       //Ensure pwm=0
       
       gpio_set_level(gpio_pins[i],0);   //Disable all low side switches
@@ -225,62 +249,136 @@ void pwm_update_L( const std_msgs::Int16& drive_L )
   }
 }
 
-void e_stop( const std_msgs::Empty& e_stop_flag )
-{
-  int msg_len = 100;
-  char message[msg_len];
-  gpio_set_level(GPIO_NUM_15,0);      //Disconnect main relay
+// void pwm_update_L( const std_msgs::Int16& drive_L )
+// {
+//   int pwm_tmp = drive_L.data;
+//   int msg_len = 100;
+//   char message[msg_len];
+//   snprintf(message, msg_len, "Got motor left value: %d\n", pwm_tmp);
+//   printf(message);
+//   status_msg.data = message;
+//   status_pub.publish(&status_msg);
+//   if ( pwm_tmp > pwm_lim_top )     // Clamping
+//   {
+//     // ESP_LOGW(TAG, "Warning, sent PWM of %d over top limit, pwm_lim_top = %d", pwm_tmp, pwm_lim_top);
+//     pwm_tmp = pwm_lim_top;
+//     snprintf(message, msg_len, "Warning, sent PWM of %d over top limit, pwm_lim_top = %d", pwm_tmp, pwm_lim_top);
+//     status_msg.data = message;
+//     status_pub.publish(&status_msg);
+//   }
+//   if ( pwm_tmp < pwm_lim_bot )
+//   {
+//     // ESP_LOGW(TAG, "Warning, PWM of %d below pwm_lim_bot", pwm_tmp);
+//     pwm_tmp = pwm_lim_bot;
+//     snprintf(message, msg_len, "Warning, PWM of %d below pwm_lim_bot", pwm_tmp);
+//     status_msg.data = message;
+//     status_pub.publish(&status_msg);
+//   }
 
-  emergency_stop_active = true;
+//   // hardcoded direction for now
+//   //hoping the the other pin is low by default
+//   //gpio_set_level(GPIO_NUM_15, 1);
 
-  for ( int i = 0; i < 4; i++){   
-    duties[i] = 0;                    //Set all PWM to 0
-    gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
-  }
 
-  ESP_ERROR_CHECK( pwm_set_duties(duties) );
-  ESP_ERROR_CHECK( pwm_start() );
+//   // PWM-PWM mode
+//   if (pwm_tmp >= 0 )    // Direction reversal
+//   {
+//     duties[1] = pwm_tmp;
+//     gpio_set_level(GPIO_DIR1_L,1);
+//     gpio_set_level(GPIO_DIR2_L,0);
+//     //duties[2] = 0;
+//     // gpio_set_level(gpio_pins[1],0);
+//     //gpio_set_level(gpio_pins[1],0);
 
-  // ESP_LOGW(TAG, "GOT EMERGENCY STOP SIGNAL, DISABLING MOTORS!");
-  snprintf(message, msg_len, "GOT EMERGENCY STOP SIGNAL, DISABLING MOTORS!");
-  status_msg.data = message;
-  status_pub.publish(&status_msg);
-}
+//   }else{              
 
-void e_recover( const std_msgs::Empty& msg )
-{
-  int msg_len = 100;
-  char message[msg_len];
+//     pwm_tmp *= -1;
+    
+//     duties[1] = pwm_tmp;
+//     gpio_set_level(GPIO_DIR1_L,0);
+//     gpio_set_level(GPIO_DIR2_L,1);
+//     //duties[2] = pwm_tmp;
+//     // gpio_set_level(gpio_pins[0],1);
+//     //gpio_set_level(gpio_pins[1],1);
 
-  emergency_stop_active = false;
+//   }
 
-  for ( int i = 0; i < 4; i++){       //Ensure pwm=0 at start
-    duties[i] = 0;                    //Set all PWM to 0
-    gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
-  }
+//   // ESP_ERROR_CHECK( esp_timer_stop(timer_handle) ); //Feed the timer
+//   // ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, TIMEOUT_IN_US) );
 
-  gpio_set_level(GPIO_NUM_15,1);      //Enable main relay
+//   // ESP_LOGI(TAG, "duties0: %d, duties1: %d, ",duties[0],duties[1]);
+//   // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_1 = %d", pwm_tmp, pwm_limit_val, duties[1]);
+
+//   if ( !emergency_stop_active )
+//   {
+//     ESP_ERROR_CHECK( pwm_set_duties(duties) );
+//     ESP_ERROR_CHECK( pwm_start() );
+//   } else {
+//      duties[0] = 0;
+//      duties[1] = 0;      
+//     for ( int i = 0; i < 4; i++){       //Ensure pwm=0
+      
+//       gpio_set_level(gpio_pins[i],0);   //Disable all low side switches
+//     }
+//   }
+// }
+
+// void e_stop( const std_msgs::Empty& e_stop_flag )
+// {
+//   int msg_len = 100;
+//   char message[msg_len];
+//   gpio_set_level(GPIO_NUM_15,0);      //Disconnect main relay
+
+//   emergency_stop_active = true;
+//   duties[0] = 0;
+//   duties[1] = 0; 
+//   for ( int i = 0; i < 4; i++){    
+//     gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
+//   }
+
+//   ESP_ERROR_CHECK( pwm_set_duties(duties) );
+//   ESP_ERROR_CHECK( pwm_start() );
+
+//   // ESP_LOGW(TAG, "GOT EMERGENCY STOP SIGNAL, DISABLING MOTORS!");
+//   snprintf(message, msg_len, "GOT EMERGENCY STOP SIGNAL, DISABLING MOTORS!");
+//   status_msg.data = message;
+//   status_pub.publish(&status_msg);
+// }
+
+// void e_recover( const std_msgs::Empty& msg )
+// {
+//   int msg_len = 100;
+//   char message[msg_len];
+
+//   emergency_stop_active = false;
+
+//   for ( int i = 0; i < 4; i++){       //Ensure pwm=0 at start
+//     duties[i] = 0;                    //Set all PWM to 0
+//     gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
+//   }
+
+//   gpio_set_level(GPIO_NUM_15,1);      //Enable main relay
   
-  ESP_ERROR_CHECK( pwm_set_duties(duties) );
-  ESP_ERROR_CHECK( pwm_start() );
+//   ESP_ERROR_CHECK( pwm_set_duties(duties) );
+//   ESP_ERROR_CHECK( pwm_start() );
   
-  snprintf(message, msg_len, "GOT EMERGENCY RECOVER SIGNAL, ENABLING MOTORS");
-  status_msg.data = message;
-  status_pub.publish(&status_msg);
-}
+//   snprintf(message, msg_len, "GOT EMERGENCY RECOVER SIGNAL, ENABLING MOTORS");
+//   status_msg.data = message;
+//   status_pub.publish(&status_msg);
+// }
 
 ros::Subscriber<std_msgs::Int16> w_left_sub("/roboy/pinky/middleware/espchair/wheels/left", &pwm_update_L);
 ros::Subscriber<std_msgs::Int16> w_right_sub("/roboy/pinky/middleware/espchair/wheels/right", &pwm_update_R);
-ros::Subscriber<std_msgs::Empty> emergency_stop_sub("/roboy/pinky/middleware/espchair/emergency/stop", &e_stop);
-ros::Subscriber<std_msgs::Empty> emergency_recover_sub("/roboy/pinky/middleware/espchair/emergency/recover", &e_recover);
+// ros::Subscriber<std_msgs::Empty> emergency_stop_sub("/roboy/pinky/middleware/espchair/emergency/stop", &e_stop);
+// ros::Subscriber<std_msgs::Empty> emergency_recover_sub("/roboy/pinky/middleware/espchair/emergency/recover", &e_recover);
 
 
 void timer_callback(void *arg)
 {
   ESP_LOGI(TAG, "Timer expired!");
-
+  duties[0] = 0;
+  duties[1] = 0; 
   for ( int i = 0; i < 4; i++){       //Stop all motors
-    duties[i] = 0;                    //Set all PWM to 0
     gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
   }
 
@@ -291,8 +389,8 @@ void timer_callback(void *arg)
 void rosserial_setup()
 {
   // const esp_timer_create_args_t timer_cfg = {
-  //   .callback = &timer_callback,
-  //   .name = "wdt_pwm"
+  //   callback : &timer_callback,
+  //   name : "wdt_pwm"
   // };
 
   nh.initNode();

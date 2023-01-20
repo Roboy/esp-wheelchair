@@ -63,7 +63,9 @@ tcpip_adapter_ip_info_t ipInfo;     //Current IP info
 
 const uint32_t pwm_pins[N_PWM_PINS] = {
             GPIO_NUM_14,
-            GPIO_NUM_12
+            GPIO_NUM_12,
+            GPIO_NUM_15
+
 };
 
 
@@ -102,10 +104,11 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
                 /*Switch to 802.11 bgn mode */
                 esp_wifi_set_protocol(ESP_IF_WIFI_STA, WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G | WIFI_PROTOCOL_11N);
             }
-
-            for ( int i = 0; i < 4; i++){       //Stop motors on connection loss
-              duties[i] = 0;                    //Set all PWM to 0
-              gpio_set_level(gpio_pins[i],1);   //Disable all low side switches
+            duties[0] = 0;                    //Set all PWM to 0
+            duties[1] = 0;
+            for ( int i = 0; i < 6; i++){       //Stop motors on connection loss
+              
+              gpio_set_level(gpio_pins[i],1);   
             }
 
             ESP_ERROR_CHECK( pwm_set_duties(duties) );
@@ -226,9 +229,7 @@ void app_main()
 {
     printf("Hello world!\n");
 
-    // Init wifi and network stack
-    wifi_init_sta();
-
+   
     taskENTER_CRITICAL();  // Disable interrupts while setting up tasks and config
 
     // xTaskCreate(&status_task,"status_task",2048,NULL,2,NULL);
@@ -253,7 +254,7 @@ void app_main()
     io_conf.intr_type = GPIO_INTR_DISABLE;    //Disable interrupts
     io_conf.mode = GPIO_MODE_OUTPUT;          //Set as outputs
     // Right LF | Left LF | Right LB | Left LB 
-    io_conf.pin_bit_mask = (GPIO_Pin_13|GPIO_Pin_14|GPIO_Pin_15|GPIO_Pin_12);
+    io_conf.pin_bit_mask = (GPIO_Pin_13|GPIO_Pin_14|GPIO_Pin_15|GPIO_Pin_12|GPIO_Pin_4|GPIO_Pin_5);
     io_conf.pull_down_en = 0;                 //Disable pull up/downs
     io_conf.pull_up_en = 0;
     gpio_config(&io_conf);
@@ -266,6 +267,11 @@ void app_main()
     // gpio_set_level(GPIO_NUM_2,1);
     // gpio_set_level(GPIO_NUM_15,0);
 
+
+    // pull enable pins HIGH
+    gpio_set_level(GPIO_NUM_4, 1);
+    gpio_set_level(GPIO_NUM_5, 1);
+
     // //Init PWM
     pwm_init(PWM_PERIOD, duties, N_PWM_PINS, pwm_pins);
     pwm_set_phases(phases);
@@ -275,6 +281,10 @@ void app_main()
     taskEXIT_CRITICAL();  // Reenable interrupts
 
     printf("PWM online\n");
+
+     // Init wifi and network stack
+    wifi_init_sta();
+
     
     // Init ROS
     rosserial_setup();
