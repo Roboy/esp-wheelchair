@@ -34,6 +34,7 @@ cd catkin_ws/src
 git clone https://github.com/ludwigthemad/rosserial_esp32.git
 cd catkin_ws 
 catkin_make
+source catkin_ws/devel/setup.bash
 rosrun rosserial_esp32 make_libraries.py $IDF_PATH/components/
 ```
 
