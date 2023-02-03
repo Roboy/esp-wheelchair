@@ -18,7 +18,7 @@ import pcl.pcl_visualization
 # outputAngular = 0.0
 # inputLinear = 0.0
 # inputAngular = 0.0
-emergencyStopThreshold = 0.001
+emergencyStopThreshold = 0.01
 viewer = pcl.pcl_visualization.PCLVisualizering()
     
 visualDone = False
@@ -39,6 +39,7 @@ def point_cloud_callback(msg):
     viewer.SpinOnce()
     viewer.RemovePointCloud( b'scene_cloud', 0)
     # find the nearest point
+    global minDist, maxDist
     minDist = 99999
     maxDist = -99999
     # print("np_points length :", len(np_points) / width)
@@ -50,22 +51,23 @@ def point_cloud_callback(msg):
             maxDist = np_points[i][2]
     # minDist *=10
     rospy.loginfo("max: %f min : %f", maxDist, minDist )
-    if minDist > 0.7: #thresholding maximum speed
-        minDist = 0.7
-    if minDist < 0: #thresholding minimum speed
-        minDist = 0
-    global outputLinear
+
+    # if minDist > 0.7: #thresholding maximum speed
+    #     minDist = 0.7
+    # if minDist < 0: #thresholding minimum speed
+    #     minDist = 0
+    # global outputLinear
     # rospy.loginfo("width: %f height : %f", width,height )
-    if inputLinear < 0:
-        outputLinear = -1 * minDist
-    elif inputLinear > 0:
-        outputLinear = minDist
-    else : 
-        outputLinear = 0
+    # if inputLinear < 0:
+    #     outputLinear = -1 * minDist
+    # elif inputLinear > 0:
+    #     outputLinear = minDist
+    # else : 
+    #     outputLinear = 0
     
     # outputspeed = minDist
-    # if minDist < emergencyStopThreshold: # emergency stop
-    #     outputspeed = 0.0
+    if minDist < emergencyStopThreshold: # emergency stop
+        outputspeed = 0.0
     
 
 
@@ -75,7 +77,13 @@ def user_input_callback(msg):
     inputAngular = msg.angular.z
     # print("inputLinear : ", inputLinear, "inputAngular  : ",  inputAngular)
     outputAngular = inputAngular
+    outputLinear = inputLinear
+    if(minDist < emergencyStopThreshold and inputLinear > 0): # asume that this is the front ToF
+        outputLinear = 0
     
+    elif (minDist < emergencyStopThreshold and inputLinear < 0): # asume that this is the back ToF
+        outputLinear = 0
+
     twist = Twist()
     print("outputLinear : ", outputLinear, "outputAngular  : ",  outputAngular)
     twist.linear.x = outputLinear
