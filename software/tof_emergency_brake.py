@@ -1,7 +1,7 @@
 # Usage:
 
 # cd esp-wheelchair
-# python3 software/tof_potential_field.py
+# python3 software/tof_emergency_brake.py
 
 import rospy
 from std_msgs.msg import Float64
@@ -33,7 +33,7 @@ def point_cloud_callback(msg):
     viewer.SpinOnce()
     viewer.RemovePointCloud( b'scene_cloud', 0)
     # find the nearest point
-    global minDist, maxDist
+    global minDist
     minDist = 99999
 
     for i in range(len(np_points)):
