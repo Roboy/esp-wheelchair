@@ -18,7 +18,7 @@ import pcl.pcl_visualization
 # outputAngular = 0.0
 # inputLinear = 0.0
 # inputAngular = 0.0
-emergencyStopThreshold = 0.01
+emergencyStopThreshold = 0.1
 viewer = pcl.pcl_visualization.PCLVisualizering()
     
 visualDone = False
@@ -79,9 +79,11 @@ def user_input_callback(msg):
     outputAngular = inputAngular
     outputLinear = inputLinear
     if(minDist < emergencyStopThreshold and inputLinear > 0): # asume that this is the front ToF
+        rospy.loginfo ("ABOUT TO COLLIDE EMERGENCY BRAKE")
         outputLinear = 0
     
     elif (minDist < emergencyStopThreshold and inputLinear < 0): # asume that this is the back ToF
+        rospy.loginfo ("ABOUT TO COLLIDE EMERGENCY BRAKE")
         outputLinear = 0
 
     twist = Twist()
