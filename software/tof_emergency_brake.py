@@ -62,7 +62,7 @@ def user_input_callback(msg):
     print("outputLinear : ", outputLinear, "outputAngular  : ",  outputAngular)
     twist.linear.x = outputLinear
     twist.angular.z = outputAngular
-    potential_field_pub.publish(twist)
+    emergency_brake_pub.publish(twist)
 
 
     
@@ -70,9 +70,9 @@ def user_input_callback(msg):
 # def main():
 rospy.init_node('tof_emergency_brake')
 
-potential_field_pub = rospy.Publisher('/roboy/pinky/middleware/espchair/wheels/potential_field', Twist, queue_size=10)
+emergency_brake_pub = rospy.Publisher('/roboy/pinky/middleware/espchair/wheels/emergency_brake', Twist, queue_size=10)
 user_input_sub = rospy.Subscriber('/cmd_vel', Twist, user_input_callback)
 point_cloud_sub = rospy.Subscriber('/royale_camera_driver/point_cloud', PointCloud2, point_cloud_callback)
 
-rospy.loginfo("publishing to /roboy/pinky/middleware/espchair/wheels/potential_field. Spinning...")
+rospy.loginfo("publishing to /roboy/pinky/middleware/espchair/wheels/emergency_brake. Spinning...")
 rospy.spin()

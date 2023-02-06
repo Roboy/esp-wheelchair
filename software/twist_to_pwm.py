@@ -53,7 +53,7 @@ def cb(msg):
 
 
 
-sub = rospy.Subscriber("/roboy/pinky/middleware/espchair/wheels/potential_field", Twist, cb)
+sub = rospy.Subscriber("/roboy/pinky/middleware/espchair/wheels/emergency_brake", Twist, cb)
 
 rospy.loginfo("Subscribed to /cmd_vel, will publish wheelchair PWM. Spinning...")
 rospy.spin()

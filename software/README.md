@@ -1,5 +1,6 @@
 # ToF Setup
 
+documentation can be accsessed here : https://devanthro.atlassian.net/wiki/spaces/WS2223/pages/2747269188/AN+Software
 ## Variables : 
 
 MAC ADDRESS ToF 1 : 3C:FB:96:DC:59:7E
@@ -28,9 +29,7 @@ to setup tof1 do these command :
 cd etc
 nano rc.local
 
-and then add rc.local with these commands
-
-...
+and then add rc.local with these commands: 
 
 #stops royale viewer entity
 systemctl stop royaleviewer
@@ -54,18 +53,16 @@ to setup tof2 do these command :
 cd etc
 nano rc.local
 
-and then add rc.local with these commands
-
-...
+and then add rc.local with these commands: 
 
 #stops royale viewer entity
 systemctl stop royaleviewer
 source /opt/ros/melodic/setup.sh
 
-# if you use other ip for ros master then do  “export ROS_MASTER_URI=http://{ROS_MASTER_IP}:11311”
+#if you use other ip for ros master then do  “export ROS_MASTER_URI=http://{ROS_MASTER_IP}:11311”
 export ROS_MASTER_URI=http://192.168.0.124:11311
 
-# if you use other ip for ToF2 then do  “export ROS_HOSTNAME={TOF2_IP}”
+#if you use other ip for ToF2 then do  “export ROS_HOSTNAME={TOF2_IP}”
 export ROS_HOSTNAME=192.168.0.123
 roslaunch royale_ros_sample camera_driver.launch node_name:=”tof2”
 
@@ -77,10 +74,10 @@ Reset the ToF sensor then ToF should publish data to /tof2/...
 
 Do these command on the ROS master device:
 
-# if you use other ip for ros master then do  “export ROS_HOSTNAME={ROS_MASTER_IP}”
+#if you use other ip for ros master then do  “export ROS_HOSTNAME={ROS_MASTER_IP}”
 export ROS_HOSTNAME=192.168.0.124
 
-# if you use other ip for ros master then do  “export ROS_MASTER_URI=http://{ROS_MASTER_IP}:11311”
+#if you use other ip for ros master then do  “export ROS_MASTER_URI=http://{ROS_MASTER_IP}:11311”
 export ROS_MASTER_URI=http://192.168.0.124:11311
 roscore
 
