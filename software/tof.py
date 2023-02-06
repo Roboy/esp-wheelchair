@@ -84,7 +84,7 @@ def user_input_callback(msg):
         outputLinear = 0
 
 # reppelent field 
-    # outputLinear,outputAngular = repelentMode.control(minDist_front,minDist_back)
+    # outputLinear,outputAngular = repelentMode.control(inputLinear,inputAngular,minDist_front,minDist_back)
 
     twist = Twist()
     twist.linear.x = outputLinear
