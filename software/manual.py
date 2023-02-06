@@ -2,5 +2,5 @@ class ManualMode:
     def __init__(self):
         return
     
-    def control(inputLinear, inputAngular):
-        return (inputLinear,inputAngular)
+    def control(self, inputLinear, inputAngular):
+        return inputLinear,inputAngular

@@ -46,13 +46,13 @@ def cb(msg):
 
 	lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
 	rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
-
+	print(" left : ", sign(l)*lPwm, ", right : ",sign(r)*rPwm)
 	pub_l.publish(sign(l)*lPwm)
 	pub_r.publish(sign(r)*rPwm)
 
 
+InputTopic = "/roboy/pinky/middleware/espchair/wheels/assisted_navigation"
+sub = rospy.Subscriber(InputTopic, Twist, cb)
 
-sub = rospy.Subscriber("/roboy/pinky/middleware/espchair/wheels/emergency_brake", Twist, cb)
-
-rospy.loginfo("Subscribed to /cmd_vel, will publish wheelchair PWM. Spinning...")
+rospy.loginfo("Subscribed to " + InputTopic + ", will publish wheelchair PWM. Spinning...")
 rospy.spin()

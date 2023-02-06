@@ -14,10 +14,16 @@ import pcl.pcl_visualization
 from manual import * 
 
 useVisual = False
-emergencyStopThreshold = 0.1
 
-viewer_front = pcl.pcl_visualization.PCLVisualizering()
-viewer_back = pcl.pcl_visualization.PCLVisualizering()
+emergencyStopThreshold = 0.1
+if(useVisual):
+    viewer_front = pcl.pcl_visualization.PCLVisualizering()
+    viewer_back = pcl.pcl_visualization.PCLVisualizering()
+minDist_front = 9999
+minDist_back = 9999
+inputLinear = None
+inputAngular = None
+manualMode = ManualMode()
 
 def getNearestDistance(points):
     min = 9999
@@ -63,13 +69,24 @@ def point_cloud_back_callback(msg):
     minDist_back = getNearestDistance(np_points)
 
 def user_input_callback(msg):
-    global inputLinear, inputAngular
+    
     inputLinear = msg.linear.x
     inputAngular = msg.angular.z
-    outputAngular = inputAngular
-    outputLinear = inputLinear
+    # print(inputLinear, inputAngular)
+    # print("inputLinear : ", inputLinear, ",inputAngular  : ",  inputAngular)
+    outputLinear,outputAngular = manualMode.control(inputLinear,inputAngular)
+    # print("outputLinear : ", outputLinear, ", outputAngular  : ",  outputAngular)
+    if(minDist_front < emergencyStopThreshold and inputLinear > 0): # asume that this is the front ToF
+        print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
+        outputLinear = 0
+    elif (minDist_back < emergencyStopThreshold and inputLinear < 0): # asume that this is the back ToF
+        print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
+        outputLinear = 0
+    twist = Twist()
+    twist.linear.x = outputLinear
+    twist.angular.z = outputAngular
+    assisted_navigation_pub.publish(twist)
 
-# def main():
 rospy.init_node('assisted_Navigation')
 
 assisted_navigation_pub = rospy.Publisher('/roboy/pinky/middleware/espchair/wheels/assisted_navigation', Twist, queue_size=10)
@@ -79,25 +96,5 @@ user_input_sub = rospy.Subscriber('/cmd_vel', Twist, user_input_callback)
 point_cloud_front_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, point_cloud_front_callback)
 point_cloud__back_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, point_cloud_back_callback)
 
-rospy.loginfo("publishing to /roboy/pinky/middleware/espchair/wheels/assisted_navigation. Spinning...")
-
-manualMode = ManualMode()
-    
-rate = rospy.Rate(10) # 10hz
-while not rospy.is_shutdown():
-    if(minDist_front < emergencyStopThreshold and inputLinear > 0): # asume that this is the front ToF
-        rospy.loginfo ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
-        outputLinear = 0
-    
-    elif (minDist_back < emergencyStopThreshold and inputLinear < 0): # asume that this is the back ToF
-        rospy.loginfo ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
-        outputLinear = 0
-
-
-    outputLinear,outputAngular = manualMode.control(inputLinear,inputAngular)
-    rospy.loginfo("outputLinear : ", outputLinear, "outputAngular  : ",  outputAngular)
-    
-    twist = Twist()
-    twist.linear.x = outputLinear
-    twist.angular.z = outputAngular
-    assisted_navigation_pub.publish(twist)
+print("publishing to /roboy/pinky/middleware/espchair/wheels/assisted_navigation. Spinning...")
+rospy.spin()
