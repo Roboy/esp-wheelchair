@@ -14,8 +14,18 @@ from manual import *
 class Assisted_Navigation_Test(unittest.TestCase):
     def test_Repelent_Field(self):
         repelentMode = RepelentMode()
-        repelentMode.control()
+        inputLinear = 10
+        inputAngular = 11
+        minDistFront = 0.01
+        minDistBack = 10
+        
+        assert( repelentMode.control(inputLinear,inputAngular, minDistFront, minDistBack), (0, inputAngular))
+
     def test_Manual_Mode(self):
+        manualMode = ManualMode()
+        inputLinear = 10
+        inputAngular = 11
+        assert(manualMode.control(inputLinear,inputAngular), (inputLinear, inputAngular))
 
 if __name__ == '__main__':
     unittest.main()
