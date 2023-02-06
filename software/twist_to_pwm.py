@@ -1,6 +1,5 @@
 # Usage:
 
-
 # rosrun rosserial_python serial_node.py tcp
 # plugin wheelchair power
 
