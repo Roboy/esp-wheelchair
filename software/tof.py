@@ -24,6 +24,7 @@ minDist_back = 9999
 inputLinear = None
 inputAngular = None
 manualMode = ManualMode()
+repelentMode = RepelentMode()
 
 def getNearestDistance(points):
     min = 9999
@@ -41,11 +42,11 @@ def point_cloud_front_callback(msg):
     np_points[:, 0] = np.resize(pc['x'], height * width)
     np_points[:, 1] = np.resize(pc['y'], height * width)
     np_points[:, 2] = np.resize(pc['z'], height * width)
-
-    p = pcl.PointCloud(np.array(np_points, dtype=np.float32))
-    viewer_front.AddPointCloud(p, b'scene_cloud_front', 0)
-    viewer_front.SpinOnce()
-    viewer_front.RemovePointCloud( b'scene_cloud_front', 0)
+    if(useVisual):
+        p = pcl.PointCloud(np.array(np_points, dtype=np.float32))
+        viewer_front.AddPointCloud(p, b'scene_cloud_front', 0)
+        viewer_front.SpinOnce()
+        viewer_front.RemovePointCloud( b'scene_cloud_front', 0)
     # find the nearest point
     global minDist_front
     minDist_front = getNearestDistance(np_points)
@@ -59,29 +60,32 @@ def point_cloud_back_callback(msg):
     np_points[:, 0] = np.resize(pc['x'], height * width)
     np_points[:, 1] = np.resize(pc['y'], height * width)
     np_points[:, 2] = np.resize(pc['z'], height * width)
-
-    p = pcl.PointCloud(np.array(np_points, dtype=np.float32))
-    viewer_back.AddPointCloud(p, b'scene_cloud_back', 0)
-    viewer_back.SpinOnce()
-    viewer_back.RemovePointCloud( b'scene_cloud_back', 0)
+    if(useVisual):
+        p = pcl.PointCloud(np.array(np_points, dtype=np.float32))
+        viewer_back.AddPointCloud(p, b'scene_cloud_back', 0)
+        viewer_back.SpinOnce()
+        viewer_back.RemovePointCloud( b'scene_cloud_back', 0)
     # find the nearest point
     global minDist_back
     minDist_back = getNearestDistance(np_points)
 
-def user_input_callback(msg):
-    
+def user_input_callback(msg):   
     inputLinear = msg.linear.x
     inputAngular = msg.angular.z
-    # print(inputLinear, inputAngular)
-    # print("inputLinear : ", inputLinear, ",inputAngular  : ",  inputAngular)
+
+# manual mode
     outputLinear,outputAngular = manualMode.control(inputLinear,inputAngular)
-    # print("outputLinear : ", outputLinear, ", outputAngular  : ",  outputAngular)
+
     if(minDist_front < emergencyStopThreshold and inputLinear > 0): # asume that this is the front ToF
         print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
         outputLinear = 0
     elif (minDist_back < emergencyStopThreshold and inputLinear < 0): # asume that this is the back ToF
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
         outputLinear = 0
+
+# reppelent field 
+    # outputLinear,outputAngular = repelentMode.control(minDist_front,minDist_back)
+
     twist = Twist()
     twist.linear.x = outputLinear
     twist.angular.z = outputAngular
