@@ -39,12 +39,7 @@ def point_cloud_front_callback(msg):
     p = pcl.PointCloud(np.array(np_points, dtype=np.float32))
     viewer_front.AddPointCloud(p, b'scene_cloud_front', 0)
     viewer_front.SpinOnce()
-<<<<<<< Updated upstream:software/tof.py
-    viewer_front.RemovePointCloud( b'scene_cloud', 0)
-
-=======
     viewer_front.RemovePointCloud( b'scene_cloud_front', 0)
->>>>>>> Stashed changes:software/tof_emergency_brake.py
     # find the nearest point
     global minDist_front
     minDist_front = getNearestDistance(np_points)
