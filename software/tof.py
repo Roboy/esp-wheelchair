@@ -37,10 +37,14 @@ def point_cloud_front_callback(msg):
     np_points[:, 2] = np.resize(pc['z'], height * width)
 
     p = pcl.PointCloud(np.array(np_points, dtype=np.float32))
-    viewer_front.AddPointCloud(p, b'scene_cloud', 0)
+    viewer_front.AddPointCloud(p, b'scene_cloud_front', 0)
     viewer_front.SpinOnce()
+<<<<<<< Updated upstream:software/tof.py
     viewer_front.RemovePointCloud( b'scene_cloud', 0)
 
+=======
+    viewer_front.RemovePointCloud( b'scene_cloud_front', 0)
+>>>>>>> Stashed changes:software/tof_emergency_brake.py
     # find the nearest point
     global minDist_front
     minDist_front = getNearestDistance(np_points)
@@ -56,9 +60,9 @@ def point_cloud_back_callback(msg):
     np_points[:, 2] = np.resize(pc['z'], height * width)
 
     p = pcl.PointCloud(np.array(np_points, dtype=np.float32))
-    viewer_back.AddPointCloud(p, b'scene_cloud', 0)
+    viewer_back.AddPointCloud(p, b'scene_cloud_back', 0)
     viewer_back.SpinOnce()
-    viewer_back.RemovePointCloud( b'scene_cloud', 0)
+    viewer_back.RemovePointCloud( b'scene_cloud_back', 0)
     # find the nearest point
     global minDist_back
     minDist_back = getNearestDistance(np_points)
