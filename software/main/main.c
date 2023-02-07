@@ -227,7 +227,7 @@ static void status_task(void *pvParameters)
 
 void app_main()
 {
-    printf("Hello world!\n");
+    // printf("Hello world!\n");
 
    
     taskENTER_CRITICAL();  // Disable interrupts while setting up tasks and config
@@ -236,43 +236,27 @@ void app_main()
     // printf("status_task starting\n");
 
     
-    // Init GPIOs for PWM output and MOSFET control
     gpio_config_t io_conf;
-    /*
+
     io_conf.intr_type = GPIO_INTR_DISABLE;    //Disable interrupts
     io_conf.mode = GPIO_MODE_OUTPUT;          //Set as outputs
-    // Right HF | Left HF | Right HB | Left HB
-    io_conf.pin_bit_mask = (GPIO_Pin_4|GPIO_Pin_12|GPIO_Pin_13|GPIO_Pin_14);
-    io_conf.pull_down_en = 0;                 //Disable pull up/downs
-    io_conf.pull_up_en = 0;
-    gpio_config(&io_conf);
-    //REG_WRITE(GPIO_OUT_W1TC_ADDRESS, 0xFFFF);     //Clear all 16 outputs,
-    //doesn't work
-    */
-    
-    // Init GPIOs for low side mosfet activation
-    io_conf.intr_type = GPIO_INTR_DISABLE;    //Disable interrupts
-    io_conf.mode = GPIO_MODE_OUTPUT;          //Set as outputs
-    // Right LF | Left LF | Right LB | Left LB 
+
     io_conf.pin_bit_mask = (GPIO_Pin_13|GPIO_Pin_14|GPIO_Pin_15|GPIO_Pin_12|GPIO_Pin_4|GPIO_Pin_5);
     io_conf.pull_down_en = 0;                 //Disable pull up/downs
     io_conf.pull_up_en = 0;
     gpio_config(&io_conf);
     
 
-    // // Initial MOSFET safe config
-    // gpio_set_level(GPIO_NUM_5,1);
-    // gpio_set_level(GPIO_NUM_16,1);
-    // gpio_set_level(GPIO_NUM_0,1);
-    // gpio_set_level(GPIO_NUM_2,1);
-    // gpio_set_level(GPIO_NUM_15,0);
-
-
+    gpio_set_level(GPIO_NUM_14, 0);
+    // gpio_set_level(GPIO_NUM_13, 0);
     // pull enable pins HIGH
     gpio_set_level(GPIO_NUM_4, 1);
     gpio_set_level(GPIO_NUM_5, 1);
 
     // //Init PWM
+    duties[0] = 0;
+    duties[1] = 0;
+    duties[2] = 0;
     pwm_init(PWM_PERIOD, duties, N_PWM_PINS, pwm_pins);
     pwm_set_phases(phases);
     pwm_start();
@@ -289,9 +273,8 @@ void app_main()
     // Init ROS
     rosserial_setup();
 
-    // Activating VDS
+
     vTaskDelay(1000 / portTICK_PERIOD_MS);
-    //gpio_set_level(GPIO_NUM_15,1);
 
     // Spinning ROS
     // xTaskCreate(&ros_spin_task,"ros_spin_task",4096,NULL,4,NULL);
