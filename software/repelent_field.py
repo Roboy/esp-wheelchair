@@ -3,9 +3,9 @@ class RepelentMode:
         return
     
     def control(self, inputLinear, inputAngular, minDistFront, minDistBack):
-        if inputLinear > 0:
+        if inputLinear >= 0:
             outputLinear = minDistFront
         elif inputLinear < 0:
-            outputLinear = minDistBack
+            outputLinear = -1*minDistBack
 
         return outputLinear,inputAngular
