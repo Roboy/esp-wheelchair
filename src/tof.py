@@ -11,8 +11,8 @@ import pcl
 import ros_numpy
 import numpy as np
 import pcl.pcl_visualization
-from manual import * 
-from repelent_field import *
+from manual_control import * 
+from repelent_field_control import *
 useVisual = False
 
 emergencyStopThreshold = 0.1
