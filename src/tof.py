@@ -63,7 +63,7 @@ def point_cloud_front_callback(msg):
     if(useVisual):
         visualizePointCloud(viewer_front, front_Pointcloud_array)
     # find the nearest point
-    minDist_front =  np.amin(front_Pointcloud_array[:, 2])
+    minDist_front =  np.nanmin(front_Pointcloud_array[:,2])
 
 def point_cloud_back_callback(msg):
     # change from pointcloud2 to numpy
@@ -72,7 +72,7 @@ def point_cloud_back_callback(msg):
     if(useVisual): 
         visualizePointCloud(viewer_back, back_Pointcloud_array)
     # find the nearest point
-    minDist_back = np.amin(back_Pointcloud_array[:, 2])
+    minDist_back = np.nanmin(back_Pointcloud_array[:, 2])
 
 def user_input_callback(msg):   
     inputLinear = msg.linear.x
