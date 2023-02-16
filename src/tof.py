@@ -26,13 +26,6 @@ inputAngular = None
 manualMode = ManualMode()
 repelentMode = RepelentMode()
 
-def getNearestDistance(points):
-    min = 9999
-    for i in range(len(points)):
-        if(min > points[i][2]):
-            min = points[i][2]
-    return min
-    
 def point_cloud_front_callback(msg):
     # change from pointcloud2 to numpy
     pc = ros_numpy.numpify(msg)
@@ -49,7 +42,7 @@ def point_cloud_front_callback(msg):
         viewer_front.RemovePointCloud( b'scene_cloud_front', 0)
     # find the nearest point
     global minDist_front
-    minDist_front = getNearestDistance(np_points)
+    minDist_front =  np.amin(np_points[:, 2])
 
 def point_cloud_back_callback(msg):
     # change from pointcloud2 to numpy
@@ -67,7 +60,7 @@ def point_cloud_back_callback(msg):
         viewer_back.RemovePointCloud( b'scene_cloud_back', 0)
     # find the nearest point
     global minDist_back
-    minDist_back = getNearestDistance(np_points)
+    minDist_back = np.amin(np_points[:, 2])
 
 def user_input_callback(msg):   
     inputLinear = msg.linear.x
