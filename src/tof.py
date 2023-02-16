@@ -37,7 +37,7 @@ repelentMode = RepelentMode()
 sign = lambda a: (a>0) - (a<0)
 
 def mapPwm(x, out_min, out_max):
-	return x * (out_max - out_min) + out_min;
+    return x * (out_max - out_min) + out_min;
 
 def pointCloud_to_NumpyArray(point_Cloud):
     height = point_Cloud.shape[0]
@@ -95,17 +95,17 @@ def user_input_callback(msg):
     assisted_navigation_pub.publish(twist)
 
     rospy.loginfo_throttle(5, "Publishing pwm..")
-	x = max(min(outputLinear, 1.0), -1.0)
-	z = max(min(outputAngular, 1.0), -1.0)
+    x = max(min(outputLinear, 1.0), -1.0)
+    z = max(min(outputAngular, 1.0), -1.0)
 
-	l = (outputLinear - outputAngular) / 2.0
-	r = (outputLinear + outputAngular) / 2.0
+    l = (outputLinear - outputAngular) / 2.0
+    r = (outputLinear + outputAngular) / 2.0
 
-	lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
-	rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
-	print(" left : ", sign(l)*lPwm, ", right : ",sign(r)*rPwm)
-	pub_l.publish(sign(l)*lPwm)
-	pub_r.publish(sign(r)*rPwm)
+    lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
+    rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
+    print(" left : ", sign(l)*lPwm, ", right : ",sign(r)*rPwm)
+    pub_l.publish(sign(l)*lPwm)
+    pub_r.publish(sign(r)*rPwm)
 
 # main loop
 rospy.init_node('assisted_Navigation')
