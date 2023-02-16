@@ -18,7 +18,7 @@ from repelent_field_control import *
 
 
 # Parameters
-useVisual = False
+useVisual = True
 PWM_MIN = 5
 PWMRANGE = 40
 
@@ -49,18 +49,19 @@ def pointCloud_to_NumpyArray(point_Cloud):
     return np_points
 
 def visualizePointCloud(viewer ,point_Cloud):
-    if(useVisual):
-        p = pcl.PointCloud(np.array(point_Cloud, dtype=np.float32))
-        viewer.AddPointCloud(p, b'scene_cloud_front', 0)
-        viewer.SpinOnce()
-        viewer.RemovePointCloud( b'scene_cloud_front', 0)
+    p = pcl.PointCloud(np.array(point_Cloud, dtype=np.float32))
+    viewer.AddPointCloud(p, b'scene_cloud_front', 0)
+    viewer.SpinOnce()
+    viewer.RemovePointCloud( b'scene_cloud_front', 0)
 
 
 def point_cloud_front_callback(msg):
     # change from pointcloud2 to numpy
     pc = ros_numpy.numpify(msg)
     front_Pointcloud_array = pointCloud_to_NumpyArray(pc)
-    visualizePointCloud(viewer_front, front_Pointcloud_array)
+    
+    if(useVisual):
+        visualizePointCloud(viewer_front, front_Pointcloud_array)
     # find the nearest point
     minDist_front =  np.amin(front_Pointcloud_array[:, 2])
 
@@ -68,7 +69,8 @@ def point_cloud_back_callback(msg):
     # change from pointcloud2 to numpy
     pc = ros_numpy.numpify(msg)
     back_Pointcloud_array = pointCloud_to_NumpyArray(pc)
-    visualizePointCloud(viewer_back, back_Pointcloud_array)
+    if(useVisual): 
+        visualizePointCloud(viewer_back, back_Pointcloud_array)
     # find the nearest point
     minDist_back = np.amin(back_Pointcloud_array[:, 2])
 
