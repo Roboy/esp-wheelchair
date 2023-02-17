@@ -1,10 +1,11 @@
 # Usage:
 
+
 # rosrun rosserial_python serial_node.py tcp
 # plugin wheelchair power
 
 # cd esp-wheelchair
-# python3 software/twist_to_pwm.py
+# python software/twist_to_pwm.py
 
 # start ROS joystick node - atk3 is for logitech joystick
 # roslaunch teleop_twist_joy teleop.launch joy_config:=atk3
@@ -37,22 +38,25 @@ def mapPwm(x, out_min, out_max):
 
 
 def cb(msg):
-	rospy.loginfo_throttle(5, "Publishing pwm..")
-	x = max(min(msg.linear.x, 1.0), -1.0)
-	z = max(min(msg.angular.z, 1.0), -1.0)
+	if not rospy.get_param('wheelchair_emergency_stopped'):
+		rospy.loginfo_throttle(5, "Publishing pwm..")
+		x = max(min(msg.linear.x, 1.0), -1.0)
+		z = max(min(msg.angular.z, 1.0), -1.0)
 
-	l = (msg.linear.x - msg.angular.z) / 2.0
-	r = (msg.linear.x + msg.angular.z) / 2.0
+		l = (msg.linear.x - msg.angular.z) / 2.0
+		r = (msg.linear.x + msg.angular.z) / 2.0
 
-	lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
-	rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
-	print(" left : ", sign(l)*lPwm, ", right : ",sign(r)*rPwm)
-	pub_l.publish(sign(l)*lPwm)
-	pub_r.publish(sign(r)*rPwm)
+		lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
+		rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
+
+		pub_l.publish(sign(l)*lPwm)
+		pub_r.publish(sign(r)*rPwm)
+	else:
+		rospy.logwarn_throttle(1, "Emergency stop active. Ignoring cmd_vel")
 
 
-InputTopic = "/roboy/pinky/middleware/espchair/wheels/assisted_navigation"
-sub = rospy.Subscriber(InputTopic, Twist, cb)
 
-rospy.loginfo("Subscribed to " + InputTopic + ", will publish wheelchair PWM. Spinning...")
+sub = rospy.Subscriber("/cmd_vel", Twist, cb)
+
+rospy.loginfo("Subscribed to /cmd_vel, will publish wheelchair PWM. Spinning...")
 rospy.spin()
