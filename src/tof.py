@@ -101,25 +101,27 @@ def user_input_callback(msg):
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
         outputLinear = 0
 
-    # publish the TWIST output to simulation
-    twist = Twist()
-    twist.linear.x = outputLinear
-    twist.angular.z = outputAngular
-    assisted_navigation_pub.publish(twist)
+    # check if wheelchair_emergency_stopped is TRUE
+    if not rospy.get_param('wheelchair_emergency_stopped'):
+        # publish the TWIST output to simulation
+        twist = Twist()
+        twist.linear.x = outputLinear
+        twist.angular.z = outputAngular
+        assisted_navigation_pub.publish(twist)
 
-    # publish the output to wheels 
-    rospy.loginfo_throttle(5, "Publishing pwm..")
-    x = max(min(outputLinear, 1.0), -1.0)
-    z = max(min(outputAngular, 1.0), -1.0)
+        # publish the output to wheels 
+        rospy.loginfo_throttle(5, "Publishing pwm..")
+        x = max(min(outputLinear, 1.0), -1.0)
+        z = max(min(outputAngular, 1.0), -1.0)
 
-    l = (outputLinear - outputAngular) / 2.0
-    r = (outputLinear + outputAngular) / 2.0
+        l = (outputLinear - outputAngular) / 2.0
+        r = (outputLinear + outputAngular) / 2.0
 
-    lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
-    rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
-    print(" left : ", sign(l)*lPwm, ", right : ",sign(r)*rPwm)
-    pub_l.publish(sign(l)*lPwm)
-    pub_r.publish(sign(r)*rPwm)
+        lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
+        rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
+        print(" left : ", sign(l)*lPwm, ", right : ",sign(r)*rPwm)
+        pub_l.publish(sign(l)*lPwm)
+        pub_r.publish(sign(r)*rPwm)
 
 # main loop
 rospy.init_node('assisted_Navigation')
