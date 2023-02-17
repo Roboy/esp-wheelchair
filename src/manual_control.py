@@ -1,4 +1,5 @@
 class ManualMode:
+    """ Manual Mode no modification between user input and output """
     def __init__(self):
         return
     

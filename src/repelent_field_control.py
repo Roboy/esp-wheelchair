@@ -1,11 +1,23 @@
 class RepelentMode:
+    """ Repelent field mode get slower as the robot get near an obstacle """
+    DistFront = 1
+    DistBack = 1
     def __init__(self):
         return
     
-    def control(self, inputLinear, inputAngular, minDistFront, minDistBack):
+    def setDistanceFront(self, distance):
+        """ Set member variable DistFront """
+        self.DistFront = distance
+    
+    def setDistanceBack(self, distance):
+        """ Set member variable DistBack """
+        self.DistBack = distance
+
+    def control(self, inputLinear, inputAngular):
+        """ give an output based of the distance to an obstacle """
         if inputLinear >= 0:
-            outputLinear = minDistFront
+            outputLinear = self.DistFront
         elif inputLinear < 0:
-            outputLinear = -1*minDistBack
+            outputLinear = -1*self.DistBack
 
         return outputLinear,inputAngular
