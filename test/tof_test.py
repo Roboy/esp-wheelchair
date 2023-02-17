@@ -9,10 +9,10 @@ import ros_numpy
 import numpy as np
 import pcl.pcl_visualization
 import sys
-sys.path.insert(1, '../esp-wheelchair/software')
+sys.path.insert(1, '../esp-wheelchair/src')
 
-from manual import * 
-from repelent_field import * 
+from manual_control import * 
+from repelent_field_control import * 
 
 class Assisted_Navigation_Test(unittest.TestCase):
     def test_Repelent_Field(self):
@@ -21,8 +21,9 @@ class Assisted_Navigation_Test(unittest.TestCase):
         inputAngular = 11
         minDistFront = 0.01
         minDistBack = 10
-        
-        outputLiner,outputAngular = repelentMode.control(inputLinear,inputAngular, minDistFront, minDistBack)
+        repelentMode.setDistanceFront(minDistFront)
+        repelentMode.setDistanceBack(minDistBack)
+        outputLiner,outputAngular = repelentMode.control(inputLinear,inputAngular)
         # test
         # assert(outputLiner == 0 and outputAngular == outputAngular )
         self.assertEqual((outputLiner, outputAngular), (0.01, inputAngular))
@@ -31,8 +32,9 @@ class Assisted_Navigation_Test(unittest.TestCase):
         inputAngular = 2
         minDistFront = 2
         minDistBack = 0.1
-        
-        outputLiner,outputAngular = repelentMode.control(inputLinear,inputAngular, minDistFront, minDistBack)
+        repelentMode.setDistanceBack(minDistFront)
+        repelentMode.setDistanceBack(minDistBack)
+        outputLiner,outputAngular = repelentMode.control(inputLinear,inputAngular)
         # test
         self.assertEqual((outputLiner, outputAngular), (-0.1, inputAngular))
 
