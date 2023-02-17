@@ -15,7 +15,10 @@ from manual_control import *
 from repelent_field_control import * 
 
 class Assisted_Navigation_Test(unittest.TestCase):
+    """ Class to test use cases of assisted navigation functions """
+
     def test_Repelent_Field(self):
+        """ Test the Repelent Field class """
         repelentMode = RepelentMode()
         inputLinear = 10
         inputAngular = 11
@@ -24,8 +27,7 @@ class Assisted_Navigation_Test(unittest.TestCase):
         repelentMode.setDistanceFront(minDistFront)
         repelentMode.setDistanceBack(minDistBack)
         outputLiner,outputAngular = repelentMode.control(inputLinear,inputAngular)
-        # test
-        # assert(outputLiner == 0 and outputAngular == outputAngular )
+        # test speed when going forward
         self.assertEqual((outputLiner, outputAngular), (0.01, inputAngular))
         repelentMode = RepelentMode()
         inputLinear = -1
@@ -35,11 +37,12 @@ class Assisted_Navigation_Test(unittest.TestCase):
         repelentMode.setDistanceBack(minDistFront)
         repelentMode.setDistanceBack(minDistBack)
         outputLiner,outputAngular = repelentMode.control(inputLinear,inputAngular)
-        # test
+        # test speed when going backward
         self.assertEqual((outputLiner, outputAngular), (-0.1, inputAngular))
 
 
     def test_Manual_Mode(self):
+        """ Test Manual Mode should just return the same value """
         manualMode = ManualMode()
         inputLinear = 10
         inputAngular = 1
