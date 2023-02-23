@@ -8,11 +8,16 @@ class RepelentMode:
     def setDistanceFront(self, distance):
         """ Set member variable DistFront """
         self.DistFront = distance
+    def getDistanceFront(self):
+        """ Set member variable DistFront """
+        return self.DistFront 
     
     def setDistanceBack(self, distance):
         """ Set member variable DistBack """
         self.DistBack = distance
-
+    def getDistanceBack(self):
+        """ Set member variable DistFront """
+        return self.DistBack 
     def control(self, inputLinear, inputAngular):
         """ give an output based of the distance to an obstacle """
         if inputLinear >= 0:

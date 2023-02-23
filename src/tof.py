@@ -27,8 +27,6 @@ emergencyStopThreshold = 0.1
 if(useVisual):
     viewer_front = pcl.pcl_visualization.PCLVisualizering()
     viewer_back = pcl.pcl_visualization.PCLVisualizering()
-minDist_front = 9999
-minDist_back = 9999
 inputLinear = None
 inputAngular = None
 manualMode = ManualMode()
@@ -67,7 +65,7 @@ def point_cloud_front_callback(msg):
     # visualize if useVisual is TRUE 
     if(useVisual):
         visualizePointCloud(viewer_front, front_Pointcloud_array)
-    # find the nearest point and store it at minDist_front
+    # find the nearest point and store it at repelent Class
     minDist_front =  np.nanmin(front_Pointcloud_array[:,2])
     repelentMode.setDistanceFront(minDist_front)
 
@@ -80,7 +78,7 @@ def point_cloud_back_callback(msg):
     # visualize if useVisual is TRUE 
     if(useVisual): 
         visualizePointCloud(viewer_back, back_Pointcloud_array)
-    # find the nearest point and store it at minDist_back
+    # find the nearest point and store it at repelent Class
     minDist_back = np.nanmin(back_Pointcloud_array[:, 2])
     repelentMode.setDistanceBack(minDist_back)
 
@@ -94,40 +92,43 @@ def user_input_callback(msg):
     outputLinear,outputAngular = MODE.control(inputLinear,inputAngular)
 
     # if the minimum distance is within a certaun threshold then brake
-    if(minDist_front < emergencyStopThreshold and inputLinear > 0): # this is the front ToF
+    if(repelentMode.getDistanceFront() < emergencyStopThreshold and inputLinear > 0): # this is the front ToF
         print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
         outputLinear = 0
-    elif (minDist_back < emergencyStopThreshold and inputLinear < 0): # this is the back ToF
+    elif (repelentMode.getDistanceBack() < emergencyStopThreshold and inputLinear < 0): # this is the back ToF
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
         outputLinear = 0
+    # Check if wheelchair_emergency_stopped is defined 
+    if rospy.has_param('wheelchair_emergency_stopped'):
+        # check if wheelchair_emergency_stopped is TRUE
+        if rospy.get_param('wheelchair_emergency_stopped'):
+            return
 
-    # check if wheelchair_emergency_stopped is TRUE
-    if not rospy.get_param('wheelchair_emergency_stopped'):
-        # publish the TWIST output to simulation
-        twist = Twist()
-        twist.linear.x = outputLinear
-        twist.angular.z = outputAngular
-        assisted_navigation_pub.publish(twist)
+    # publish the TWIST output to simulation
+    twist = Twist()
+    twist.linear.x = outputLinear
+    twist.angular.z = outputAngular
+    assisted_navigation_pub.publish(twist)
 
-        # publish the output to wheels 
-        rospy.loginfo_throttle(5, "Publishing pwm..")
-        x = max(min(outputLinear, 1.0), -1.0)
-        z = max(min(outputAngular, 1.0), -1.0)
+    # publish the output to wheels 
+    rospy.loginfo_throttle(5, "Publishing pwm..")
+    x = max(min(outputLinear, 1.0), -1.0)
+    z = max(min(outputAngular, 1.0), -1.0)
 
-        l = (outputLinear - outputAngular) / 2.0
-        r = (outputLinear + outputAngular) / 2.0
+    l = (outputLinear - outputAngular) / 2.0
+    r = (outputLinear + outputAngular) / 2.0
 
-        lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
-        rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
-        print(" left : ", sign(l)*lPwm, ", right : ",sign(r)*rPwm)
-        pub_l.publish(sign(l)*lPwm)
-        pub_r.publish(sign(r)*rPwm)
+    lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
+    rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
+    print(" left : ", sign(l)*lPwm, ", right : ",sign(r)*rPwm)
+    pub_l.publish(sign(l)*lPwm)
+    pub_r.publish(sign(r)*rPwm)
 
 # main loop
 rospy.init_node('assisted_Navigation')
 
 # initialize mode with manual mode
-MODE *= manualMode
+MODE = manualMode
 
 # initialize wheels publisher
 pub_l = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/left", Int16, queue_size=1)
