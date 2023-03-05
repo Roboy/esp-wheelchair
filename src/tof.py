@@ -1,11 +1,12 @@
-# Usage:
+"""
+Usage:
 
-# cd esp-wheelchair
-# python3 software/tof.py
+cd esp-wheelchair
+python3 software/tof.py
 
+"""
 import rospy
-from std_msgs.msg import Float64
-from std_msgs.msg import Int16
+from std_msgs.msg import Float64, Int16
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import Twist
 import pcl
@@ -15,30 +16,30 @@ import pcl.pcl_visualization
 from manual_control import * 
 from repelent_field_control import *
 
-
-
 # Parameters
-useVisual = True
-PWM_MIN = 5
-PWMRANGE = 40
-MODE = None
+USEVISUAL = True # USEVISUAL if true will open a window that show the ToF sensor output
+PWM_MIN = 5 # PWM minimum value
+PWMRANGE = 40 # PWM range value
+EMERGENCYSTOPTHRESHOLD = 0.1 # emergency stop threshold roboy will stop if it detect a point below the thereshold
+
+
 # variable initialization
-emergencyStopThreshold = 0.1
-if(useVisual):
+if(USEVISUAL):
     viewer_front = pcl.pcl_visualization.PCLVisualizering()
     viewer_back = pcl.pcl_visualization.PCLVisualizering()
 inputLinear = None
 inputAngular = None
 manualMode = ManualMode()
 repelentMode = RepelentMode()
+Mode = manualMode
 
 sign = lambda a: (a>0) - (a<0)
 
 def mapPwm(x, out_min, out_max):
     """Map the x value 0.0 - 1.0 to out_min to out_max"""
-    return x * (out_max - out_min) + out_min;
+    return x * (out_max - out_min) + out_min
 
-def pointCloud_to_NumpyArray(point_Cloud):
+def pointCloudToNumpyArray(point_Cloud):
     """ convert a ROS's pointcloud data structure to a numpy array"""
     height = point_Cloud.shape[0]
     width = point_Cloud.shape[1]
@@ -56,46 +57,44 @@ def visualizePointCloud(viewer ,point_Cloud):
     viewer.RemovePointCloud( b'scene_cloud_front', 0)
 
 
-def point_cloud_front_callback(msg):
+def pointCloudFrontCallback(msg):
     """ Callback function for front ToF sensor """
-
     # change from pointcloud2 to numpy
     pc = ros_numpy.numpify(msg)
-    front_Pointcloud_array = pointCloud_to_NumpyArray(pc)
-    # visualize if useVisual is TRUE 
-    if(useVisual):
+    front_Pointcloud_array = pointCloudToNumpyArray(pc)
+    # visualize if USEVISUAL is TRUE 
+    if(USEVISUAL):
         visualizePointCloud(viewer_front, front_Pointcloud_array)
     # find the nearest point and store it at repelent Class
     minDist_front =  np.nanmin(front_Pointcloud_array[:,2])
     repelentMode.setDistanceFront(minDist_front)
 
-def point_cloud_back_callback(msg):
+def pointCloudBackCallback(msg):
     """ Callback function for back ToF sensor """
-
     # change from pointcloud2 to numpy
     pc = ros_numpy.numpify(msg)
-    back_Pointcloud_array = pointCloud_to_NumpyArray(pc)
-    # visualize if useVisual is TRUE 
-    if(useVisual): 
+    back_Pointcloud_array = pointCloudToNumpyArray(pc)
+    # visualize if USEVISUAL is TRUE 
+    if(USEVISUAL): 
         visualizePointCloud(viewer_back, back_Pointcloud_array)
     # find the nearest point and store it at repelent Class
     minDist_back = np.nanmin(back_Pointcloud_array[:, 2])
     repelentMode.setDistanceBack(minDist_back)
 
-def user_input_callback(msg):   
-    """ Callback funtion for user input. Takes the user input be it Twist_Teleop_Keyboard or joystick and based of variable MODE add moddification to speed """
+def userInputCallback(msg):   
+    """ Callback funtion for user input. Takes the user input be it Twist_Teleop_Keyboard or joystick and based of variable Mode add moddification to speed """
     # store user input
     inputLinear = msg.linear.x
     inputAngular = msg.angular.z
 
-    # call the current MODE control function
-    outputLinear,outputAngular = MODE.control(inputLinear,inputAngular)
+    # call the current Mode control function
+    outputLinear,outputAngular = Mode.control(inputLinear,inputAngular)
 
     # if the minimum distance is within a certaun threshold then brake
-    if(repelentMode.getDistanceFront() < emergencyStopThreshold and inputLinear > 0): # this is the front ToF
+    if(repelentMode.getDistanceFront() < EMERGENCYSTOPTHRESHOLD and inputLinear > 0): # this is the front ToF
         print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
         outputLinear = 0
-    elif (repelentMode.getDistanceBack() < emergencyStopThreshold and inputLinear < 0): # this is the back ToF
+    elif (repelentMode.getDistanceBack() < EMERGENCYSTOPTHRESHOLD and inputLinear < 0): # this is the back ToF
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
         outputLinear = 0
     # Check if wheelchair_emergency_stopped is defined 
@@ -124,25 +123,27 @@ def user_input_callback(msg):
     pub_l.publish(sign(l)*lPwm)
     pub_r.publish(sign(r)*rPwm)
 
-# main loop
-rospy.init_node('assisted_Navigation')
-
-# initialize mode with manual mode
-MODE = manualMode
-
-# initialize wheels publisher
-pub_l = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/left", Int16, queue_size=1)
-pub_r = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/right", Int16, queue_size=1)
-
-# initialize TWIST publisher for simulation
-assisted_navigation_pub = rospy.Publisher('/roboy/pinky/middleware/espchair/wheels/assisted_navigation', Twist, queue_size=10)
-
-# initialize TWIST subscriber for user input 
-user_input_sub = rospy.Subscriber('/cmd_vel', Twist, user_input_callback)
-
-# initialize pointlcloud subscriber for ToF sensor
-point_cloud_front_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, point_cloud_front_callback)
-point_cloud__back_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, point_cloud_back_callback)
-
-print("publishing to /roboy/pinky/middleware/espchair/wheels/assisted_navigation. Spinning...")
-rospy.spin()
+if __name__ == "__main__":
+    # init main loop
+    rospy.init_node('assisted_Navigation')
+    
+    # initialize mode with manual mode
+    Mode = manualMode
+    
+    # initialize wheels publisher
+    pub_l = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/left", Int16, queue_size=1)
+    pub_r = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/right", Int16, queue_size=1)
+    
+    # initialize TWIST publisher for simulation
+    assisted_navigation_pub = rospy.Publisher('/roboy/pinky/middleware/espchair/wheels/assisted_navigation', Twist, queue_size=10)
+    
+    # initialize TWIST subscriber for user input 
+    user_input_sub = rospy.Subscriber('/cmd_vel', Twist, userInputCallback)
+    
+    # initialize pointlcloud subscriber for ToF sensor
+    point_cloud_front_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudFrontCallback)
+    point_cloud__back_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudBackCallback)
+    
+    print("publishing to /roboy/pinky/middleware/espchair/wheels/assisted_navigation. Spinning...")
+    rospy.spin()
+    
