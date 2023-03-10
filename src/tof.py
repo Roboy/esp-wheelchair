@@ -2,7 +2,7 @@
 Usage:
 
 cd esp-wheelchair
-python3 src/tof_teleop.py
+python3 src/tof.py
 
 """
 import rospy
@@ -15,13 +15,13 @@ import numpy as np
 import pcl.pcl_visualization
 from manual_control import * 
 from repelent_field_control import *
+from user_input_handler import *
 
 # Parameters
 USEVISUAL = True # USEVISUAL if true will open a window that show the ToF sensor output
-PWM_MIN = 5 # PWM minimum value
-PWMRANGE = 40 # PWM range value
+PWM_MIN = 0 # PWM minimum value
+PWMRANGE = 30 # PWM range value
 EMERGENCYSTOPTHRESHOLD = 0.1 # emergency stop threshold roboy will stop if it detect a point below the thereshold
-
 
 # variable initialization
 if(USEVISUAL):
@@ -31,7 +31,8 @@ inputLinear = None
 inputAngular = None
 manualMode = ManualMode()
 repelentMode = RepelentMode()
-Mode = manualMode
+userInputHandler = UserInputHandler(PWM_MIN, PWMRANGE)
+Mode = repelentMode
 
 sign = lambda a: (a>0) - (a<0)
 
@@ -74,13 +75,17 @@ def pointCloudCallback(msg,front):
     else:
         repelentMode.setDistanceBack(minDist)
 
-def userInputCallback(msg):   
-    """ Callback funtion for user input. Takes the user input be it Twist_Teleop_Keyboard or joystick and based of variable Mode add moddification to speed """
+def userInputCallback(msg, right):   
+    """ 
+    Callback funtion for user input. Takes the user input be it Twist_Teleop_Keyboard or joystick and based of variable Mode add moddification to speed
+    arg right is true if the callback is for the right motor and false if the callback is for the left motor
+    """
     # store user input
-    inputLinear = msg.linear.x
-    inputAngular = msg.angular.z
+    userInputHandler.setUserInput(msg,right)
 
-    # call the current Mode control function
+    # call the current Mode control function to get the adjusted output
+    inputLinear,inputAngular = userInputHandler.getUserInput()
+    # print("inputLinear,inputAngular : ", inputLinear,inputAngular)
     outputLinear,outputAngular = Mode.control(inputLinear,inputAngular)
 
     # if the minimum distance is within a certaun threshold then brake
@@ -106,34 +111,41 @@ def userInputCallback(msg):
     rospy.loginfo_throttle(5, "Publishing pwm..")
     x = max(min(outputLinear, 1.0), -1.0)
     z = max(min(outputAngular, 1.0), -1.0)
+    print("x : ", x, ", z : ",z)
+    # l = userInputHandler.translate((x + z)/2, -1, 1, PWM_MIN, PWM_MIN + PWMRANGE )
+    # r = userInputHandler.translate((x - z)/2, -1, 1, PWM_MIN, PWM_MIN + PWMRANGE )
 
-    l = (outputLinear - outputAngular) / 2.0
-    r = (outputLinear + outputAngular) / 2.0
+    l = userInputHandler.translate((x - z)/2, -1, 1, -30, 30 )
+    r = userInputHandler.translate((x + z)/2, -1, 1, -30, 30 )
 
-    lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
-    rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
-    print(" left : ", sign(l)*lPwm, ", right : ",sign(r)*rPwm)
-    pub_l.publish(sign(l)*lPwm)
-    pub_r.publish(sign(r)*rPwm)
+    # lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
+    # rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
+    # print("left : ", l, ", right : ",r)
+    pub_l.publish(l)
+    pub_r.publish(r)
 
 if __name__ == "__main__":
     # init main loop
     rospy.init_node('assisted_Navigation')
     
     # initialize mode with manual mode
-    Mode = manualMode
+    Mode = repelentMode
     
     # initialize wheels publisher
-    pub_l = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/left", Int16, queue_size=1)
-    pub_r = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/right", Int16, queue_size=1)
+    pub_l = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/left/adjusted", Int16, queue_size=1)
+    pub_r = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/right/adjusted", Int16, queue_size=1)
     
     # initialize TWIST publisher for simulation
     assisted_navigation_pub = rospy.Publisher('/roboy/pinky/middleware/espchair/wheels/assisted_navigation', Twist, queue_size=10)
     
-    # initialize TWIST subscriber for user input 
-    user_input_sub = rospy.Subscriber('/cmd_vel', Twist, userInputCallback)
-    
+    # initialize subscriber for user input 
+    user_input_sub_r = rospy.Subscriber('/roboy/pinky/middleware/espchair/wheels/right', Int16, userInputCallback, True)
+    user_input_sub_l = rospy.Subscriber('/roboy/pinky/middleware/espchair/wheels/left', Int16, userInputCallback, False)
+
     # initialize pointlcloud subscriber for ToF sensor
+    # point_cloud_front_sub = rospy.Subscriber('/royale_camera_driver/point_cloud', PointCloud2, pointCloudCallback, True)
+    # point_cloud__back_sub = rospy.Subscriber('/royale_camera_driver/point_cloud', PointCloud2, pointCloudCallback, False)
+    
     point_cloud_front_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudCallback, True)
     point_cloud__back_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, False)
     

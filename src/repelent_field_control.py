@@ -20,9 +20,11 @@ class RepelentMode:
         return self.DistBack 
     def control(self, inputLinear, inputAngular):
         """ give an output based of the distance to an obstacle """
-        if inputLinear >= 0:
+        if inputLinear > 0:
             outputLinear = self.DistFront
         elif inputLinear < 0:
             outputLinear = -1*self.DistBack
+        else:
+            outputLinear = 0
 
         return outputLinear,inputAngular
