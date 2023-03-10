@@ -2,7 +2,7 @@
 Usage:
 
 cd esp-wheelchair
-python3 software/tof.py
+python3 src/tof_teleop.py
 
 """
 import rospy
@@ -56,30 +56,23 @@ def visualizePointCloud(viewer ,point_Cloud):
     viewer.SpinOnce()
     viewer.RemovePointCloud( b'scene_cloud_front', 0)
 
-
-def pointCloudFrontCallback(msg):
+def pointCloudCallback(msg,front):
     """ Callback function for front ToF sensor """
     # change from pointcloud2 to numpy
     pc = ros_numpy.numpify(msg)
-    front_Pointcloud_array = pointCloudToNumpyArray(pc)
+    Pointcloud_array = pointCloudToNumpyArray(pc)
     # visualize if USEVISUAL is TRUE 
     if(USEVISUAL):
-        visualizePointCloud(viewer_front, front_Pointcloud_array)
+        if(front):
+            visualizePointCloud(viewer_front, Pointcloud_array)
+        else:
+            visualizePointCloud(viewer_back, Pointcloud_array)
     # find the nearest point and store it at repelent Class
-    minDist_front =  np.nanmin(front_Pointcloud_array[:,2])
-    repelentMode.setDistanceFront(minDist_front)
-
-def pointCloudBackCallback(msg):
-    """ Callback function for back ToF sensor """
-    # change from pointcloud2 to numpy
-    pc = ros_numpy.numpify(msg)
-    back_Pointcloud_array = pointCloudToNumpyArray(pc)
-    # visualize if USEVISUAL is TRUE 
-    if(USEVISUAL): 
-        visualizePointCloud(viewer_back, back_Pointcloud_array)
-    # find the nearest point and store it at repelent Class
-    minDist_back = np.nanmin(back_Pointcloud_array[:, 2])
-    repelentMode.setDistanceBack(minDist_back)
+    minDist =  np.nanmin(Pointcloud_array[:,2])
+    if(front):
+        repelentMode.setDistanceFront(minDist)
+    else:
+        repelentMode.setDistanceBack(minDist)
 
 def userInputCallback(msg):   
     """ Callback funtion for user input. Takes the user input be it Twist_Teleop_Keyboard or joystick and based of variable Mode add moddification to speed """
@@ -141,8 +134,8 @@ if __name__ == "__main__":
     user_input_sub = rospy.Subscriber('/cmd_vel', Twist, userInputCallback)
     
     # initialize pointlcloud subscriber for ToF sensor
-    point_cloud_front_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudFrontCallback)
-    point_cloud__back_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudBackCallback)
+    point_cloud_front_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudCallback, True)
+    point_cloud__back_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, False)
     
     print("publishing to /roboy/pinky/middleware/espchair/wheels/assisted_navigation. Spinning...")
     rospy.spin()
