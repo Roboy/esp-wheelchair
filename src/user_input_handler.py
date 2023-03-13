@@ -1,4 +1,5 @@
 from std_msgs.msg import Float64, Int16
+
 class UserInputHandler:
     """ Manual Mode no modification between user input and output """
     PWM_MIN = 0 # PWM minimum value
@@ -26,15 +27,10 @@ class UserInputHandler:
     def getUserInput(self):
         """ Make sure User input is defined and return user input as linear and angular speed returned the user input in the range of -1 to 1"""
         if(self.leftIsDefined and self.rightIsDefined):
-            # inputLinear = self.translate( (self.rightInput.data + self.leftInput.data) / 2, self.PWM_MIN, self.PWM_MIN + self.PWMRANGE, -1, 1) 
-            # inputAngular = self.translate((self.rightInput.data - self.leftInput.data) / 2, -self.PWMRANGE, self.PWMRANGE, -1, 1)
-
-            # inputLinear = self.translate((self.rightInput.data + self.leftInput.data) / 2, self.PWM_MIN, self.PWM_MIN + self.PWMRANGE, -1, 1) 
-            # inputAngular = self.translate((self.rightInput.data - self.leftInput.data) / 2, -self.PWMRANGE, self.PWMRANGE, -1, 1)
             
             inputLinear = self.translate((self.rightInput.data + self.leftInput.data) / 2, -30, 30, -1, 1) 
             inputAngular = self.translate((self.rightInput.data - self.leftInput.data) / 2, -30, 30, -1, 1)
-            
+
             return inputLinear, inputAngular
         else:
             inputLinear = 0

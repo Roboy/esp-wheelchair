@@ -19,8 +19,10 @@ from user_input_handler import *
 
 # Parameters
 USEVISUAL = True # USEVISUAL if true will open a window that show the ToF sensor output
-PWM_MIN = 0 # PWM minimum value
-PWMRANGE = 30 # PWM range value
+INPUT_PWM_MIN = 0 # Input PWM minimum value
+INPUT_PWM_RANGE = 30 # Input PWM range value
+OUTPUT_PWM_MIN = 0 # Output PWM minimum value
+OUTPUT_PWM_RANGE = 0 # Output PWM range value
 EMERGENCYSTOPTHRESHOLD = 0.1 # emergency stop threshold roboy will stop if it detect a point below the thereshold
 
 # variable initialization
@@ -31,10 +33,11 @@ inputLinear = None
 inputAngular = None
 manualMode = ManualMode()
 repelentMode = RepelentMode()
-userInputHandler = UserInputHandler(PWM_MIN, PWMRANGE)
-Mode = repelentMode
+userInputHandler = UserInputHandler(INPUT_PWM_MIN, INPUT_PWM_RANGE)
+Mode = manualMode
 
 sign = lambda a: (a>0) - (a<0)
+    
 
 def mapPwm(x, out_min, out_max):
     """Map the x value 0.0 - 1.0 to out_min to out_max"""
@@ -56,6 +59,15 @@ def visualizePointCloud(viewer ,point_Cloud):
     viewer.AddPointCloud(p, b'scene_cloud_front', 0)
     viewer.SpinOnce()
     viewer.RemovePointCloud( b'scene_cloud_front', 0)
+
+def modeCallBack(msg):
+    """ Callback function for topic  '/roboy/pinky/middleware/espchair/wheels/mode' to change the drive mode"""
+    if(msg.data == 1):
+        Mode = manualMode
+    elif(msg.data == 2):
+        Mode = repelentMode
+    
+
 
 def pointCloudCallback(msg,front):
     """ Callback function for front ToF sensor """
@@ -115,9 +127,9 @@ def userInputCallback(msg, right):
     # l = userInputHandler.translate((x + z)/2, -1, 1, PWM_MIN, PWM_MIN + PWMRANGE )
     # r = userInputHandler.translate((x - z)/2, -1, 1, PWM_MIN, PWM_MIN + PWMRANGE )
 
-    l = userInputHandler.translate((x - z)/2, -1, 1, -30, 30 )
-    r = userInputHandler.translate((x + z)/2, -1, 1, -30, 30 )
-
+    l = sign(x)*OUTPUT_PWM_MIN + sign(x) * abs(userInputHandler.translate((x + z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE ))
+    r = sign(x)*OUTPUT_PWM_MIN + sign(x) * abs(userInputHandler.translate((x - z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE ))
+    
     # lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
     # rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
     # print("left : ", l, ", right : ",r)
@@ -130,7 +142,8 @@ if __name__ == "__main__":
     
     # initialize mode with manual mode
     Mode = repelentMode
-    
+    mode_sub = rospy.Subscriber('/roboy/pinky/middleware/espchair/wheels/mode', Int16, modeCallBack)
+
     # initialize wheels publisher
     pub_l = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/left/adjusted", Int16, queue_size=1)
     pub_r = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/right/adjusted", Int16, queue_size=1)
@@ -143,11 +156,8 @@ if __name__ == "__main__":
     user_input_sub_l = rospy.Subscriber('/roboy/pinky/middleware/espchair/wheels/left', Int16, userInputCallback, False)
 
     # initialize pointlcloud subscriber for ToF sensor
-    # point_cloud_front_sub = rospy.Subscriber('/royale_camera_driver/point_cloud', PointCloud2, pointCloudCallback, True)
-    # point_cloud__back_sub = rospy.Subscriber('/royale_camera_driver/point_cloud', PointCloud2, pointCloudCallback, False)
-    
     point_cloud_front_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudCallback, True)
-    point_cloud__back_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, False)
+    point_cloud_back_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, False)
     
     print("publishing to /roboy/pinky/middleware/espchair/wheels/assisted_navigation. Spinning...")
     rospy.spin()
