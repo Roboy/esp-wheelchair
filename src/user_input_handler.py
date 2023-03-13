@@ -37,9 +37,6 @@ class UserInputHandler:
             inputAngular = 0
             return inputLinear, inputAngular
 
-    def control(self, inputLinear, inputAngular):
-        return inputLinear,inputAngular
-
     def translate(self, value, leftMin, leftMax, rightMin, rightMax):
         # calculate value range
         leftRange = leftMax - leftMin

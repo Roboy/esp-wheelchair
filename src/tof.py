@@ -12,21 +12,22 @@ from geometry_msgs.msg import Twist
 import pcl
 import ros_numpy
 import numpy as np
-import pcl.pcl_visualization
 from manual_control import * 
 from repelent_field_control import *
 from user_input_handler import *
 
 # Parameters
-USEVISUAL = True # USEVISUAL if true will open a window that show the ToF sensor output
+USEVISUAL = False # USEVISUAL if true will open a window that show the ToF sensor output
 INPUT_PWM_MIN = 0 # Input PWM minimum value
 INPUT_PWM_RANGE = 30 # Input PWM range value
 OUTPUT_PWM_MIN = 0 # Output PWM minimum value
 OUTPUT_PWM_RANGE = 0 # Output PWM range value
-EMERGENCYSTOPTHRESHOLD = 0.1 # emergency stop threshold roboy will stop if it detect a point below the thereshold
+USE_EMERGENCYSTOP = 1 # Will use emergency stop
+EMERGENCYSTOPTHRESHOLD = 0.1 # Emergency stop threshold roboy will stop if it detect a point below the thereshold
 
 # variable initialization
 if(USEVISUAL):
+    # import pcl.pcl_visualization
     viewer_front = pcl.pcl_visualization.PCLVisualizering()
     viewer_back = pcl.pcl_visualization.PCLVisualizering()
 inputLinear = None
@@ -63,11 +64,11 @@ def visualizePointCloud(viewer ,point_Cloud):
 def modeCallBack(msg):
     """ Callback function for topic  '/roboy/pinky/middleware/espchair/wheels/mode' to change the drive mode"""
     if(msg.data == 1):
+        print("Changing Mode to Manual")
         Mode = manualMode
     elif(msg.data == 2):
+        print("Changing Mode to Repelent")
         Mode = repelentMode
-    
-
 
 def pointCloudCallback(msg,front):
     """ Callback function for front ToF sensor """
@@ -113,26 +114,24 @@ def userInputCallback(msg, right):
         if rospy.get_param('wheelchair_emergency_stopped'):
             return
 
-    # publish the TWIST output to simulation
-    twist = Twist()
-    twist.linear.x = outputLinear
-    twist.angular.z = outputAngular
-    assisted_navigation_pub.publish(twist)
 
     # publish the output to wheels 
     rospy.loginfo_throttle(5, "Publishing pwm..")
     x = max(min(outputLinear, 1.0), -1.0)
     z = max(min(outputAngular, 1.0), -1.0)
-    print("x : ", x, ", z : ",z)
-    # l = userInputHandler.translate((x + z)/2, -1, 1, PWM_MIN, PWM_MIN + PWMRANGE )
-    # r = userInputHandler.translate((x - z)/2, -1, 1, PWM_MIN, PWM_MIN + PWMRANGE )
-
-    l = sign(x)*OUTPUT_PWM_MIN + sign(x) * abs(userInputHandler.translate((x + z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE ))
-    r = sign(x)*OUTPUT_PWM_MIN + sign(x) * abs(userInputHandler.translate((x - z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE ))
+    print("linear : ", x, ", angular : ",z)
     
-    # lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
-    # rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
+    # publish the TWIST output
+    twist = Twist()
+    twist.linear.x = x
+    twist.angular.z = -1*z
+    assisted_navigation_pub.publish(twist)
+
+    # publish the PWM output
+    r = userInputHandler.translate((x + z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE )
+    l = userInputHandler.translate((x - z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE )
     # print("left : ", l, ", right : ",r)
+    
     pub_l.publish(l)
     pub_r.publish(r)
 
@@ -140,13 +139,12 @@ if __name__ == "__main__":
     # init main loop
     rospy.init_node('assisted_Navigation')
     
-    # initialize mode with manual mode
-    Mode = repelentMode
+    # initialize mode subscriber, used for changing the mode through the topic /roboy/pinky/middleware/espchair/wheels/mode
     mode_sub = rospy.Subscriber('/roboy/pinky/middleware/espchair/wheels/mode', Int16, modeCallBack)
 
     # initialize wheels publisher
-    pub_l = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/left/adjusted", Int16, queue_size=1)
-    pub_r = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/right/adjusted", Int16, queue_size=1)
+    pub_l = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/left/adjusted", Int16, queue_size=10)
+    pub_r = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/right/adjusted", Int16, queue_size=10)
     
     # initialize TWIST publisher for simulation
     assisted_navigation_pub = rospy.Publisher('/roboy/pinky/middleware/espchair/wheels/assisted_navigation', Twist, queue_size=10)
