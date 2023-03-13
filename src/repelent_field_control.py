@@ -39,12 +39,4 @@ class RepelentMode:
         # else:
         #     outputLinear = 0
 
-        # Step
-        # if inputLinear > 0:
-        #     outputLinear = self.DistFront
-        # elif inputLinear < 0:
-        #     outputLinear = -1*self.DistBack
-        # else:
-        #     outputLinear = 0
-
         return outputLinear,inputAngular

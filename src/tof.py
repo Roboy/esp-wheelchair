@@ -27,7 +27,7 @@ EMERGENCYSTOPTHRESHOLD = 0.1 # Emergency stop threshold roboy will stop if it de
 
 # variable initialization
 if(USEVISUAL):
-    # import pcl.pcl_visualization
+    import pcl.pcl_visualization
     viewer_front = pcl.pcl_visualization.PCLVisualizering()
     viewer_back = pcl.pcl_visualization.PCLVisualizering()
 inputLinear = None
