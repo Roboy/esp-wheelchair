@@ -38,7 +38,7 @@ def mapPwm(x, out_min, out_max):
 
 
 def cb(msg):
-	if not rospy.get_param('wheelchair_emergency_stopped'):
+	if True:
 		rospy.loginfo_throttle(5, "Publishing pwm..")
 		x = max(min(msg.linear.x, 1.0), -1.0)
 		z = max(min(msg.angular.z, 1.0), -1.0)
@@ -49,8 +49,8 @@ def cb(msg):
 		lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
 		rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
 
-		pub_l.publish(sign(l)*lPwm)
-		pub_r.publish(sign(r)*rPwm)
+		pub_l.publish(int(sign(l)*lPwm))
+		pub_r.publish(int(sign(r)*rPwm))
 	else:
 		rospy.logwarn_throttle(1, "Emergency stop active. Ignoring cmd_vel")
 
