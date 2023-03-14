@@ -12,6 +12,7 @@ from geometry_msgs.msg import Twist
 import pcl
 import ros_numpy
 import numpy as np
+import math
 from manual_control import * 
 from repelent_field_control import *
 from user_input_handler import *
@@ -24,6 +25,8 @@ OUTPUT_PWM_MIN = 0 # Output PWM minimum value
 OUTPUT_PWM_RANGE = 0 # Output PWM range value
 USE_EMERGENCYSTOP = 1 # Will use emergency stop
 EMERGENCYSTOPTHRESHOLD = 0.1 # Emergency stop threshold roboy will stop if it detect a point below the thereshold
+TOF_1_PITCH = 11
+TOF_2_PITCH = -5
 
 # variable initialization
 if(USEVISUAL):
@@ -54,6 +57,17 @@ def pointCloudToNumpyArray(point_Cloud):
     np_points[:, 2] = np.resize(point_Cloud['z'], height * width)
     return np_points
 
+def applyYRotation(point_Cloud, theta):
+    rotated_point_Cloud = np.zeros(point_Cloud.shape)
+    rot = [
+        [ math.cos(theta), 0, math.sin(theta)],
+        [ 0           , 1, 0           ],
+        [-math.sin(theta), 0, math.cos(theta)]
+    ]
+    for rotated, origin in zip(rotated_point_Cloud, point_Cloud):
+        rotated = np.dot(rot, origin)
+    return rotated
+
 def visualizePointCloud(viewer ,point_Cloud):
     """ visualize a numpy point cloud to a viewer """
     p = pcl.PointCloud(np.array(point_Cloud, dtype=np.float32))
@@ -70,19 +84,23 @@ def modeCallBack(msg):
         print("Changing Mode to Repelent")
         Mode = repelentMode
 
-def pointCloudCallback(msg,front):
+def pointCloudCallback(msg,front, angle):
     """ Callback function for front ToF sensor """
     # change from pointcloud2 to numpy
     pc = ros_numpy.numpify(msg)
     Pointcloud_array = pointCloudToNumpyArray(pc)
+
+    # To maximize the FOV of the TOF sensor we apply a slight pitch ( -5 deg for short/fat ToF and 16 deg for long ToF ) so to get the correct distance we apply a Y axis rotation matrix
+    rotated_Pointcloud_array = applyYRotation(Pointcloud_array,angle)
+
     # visualize if USEVISUAL is TRUE 
     if(USEVISUAL):
         if(front):
-            visualizePointCloud(viewer_front, Pointcloud_array)
+            visualizePointCloud(viewer_front, rotated_Pointcloud_array)
         else:
-            visualizePointCloud(viewer_back, Pointcloud_array)
+            visualizePointCloud(viewer_back, rotated_Pointcloud_array)
     # find the nearest point and store it at repelent Class
-    minDist =  np.nanmin(Pointcloud_array[:,2])
+    minDist =  np.nanmin(rotated_Pointcloud_array[:,2])
     if(front):
         repelentMode.setDistanceFront(minDist)
     else:
@@ -154,8 +172,8 @@ if __name__ == "__main__":
     user_input_sub_l = rospy.Subscriber('/roboy/pinky/middleware/espchair/wheels/left', Int16, userInputCallback, False)
 
     # initialize pointlcloud subscriber for ToF sensor
-    point_cloud_front_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudCallback, True)
-    point_cloud_back_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, False)
+    point_cloud_1_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudCallback, True, TOF_1_PITCH)
+    point_cloud_2_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, False, TOF_2_PITCH)
     
     print("publishing to /roboy/pinky/middleware/espchair/wheels/assisted_navigation. Spinning...")
     rospy.spin()
