@@ -18,7 +18,7 @@ from repelent_field_control import *
 from user_input_handler import *
 
 # Parameters
-USEVISUAL = False # USEVISUAL if true will open a window that show the ToF sensor output
+USEVISUAL = True # USEVISUAL if true will open a window that show the ToF sensor output
 INPUT_PWM_MIN = 0 # Input PWM minimum value
 INPUT_PWM_RANGE = 30 # Input PWM range value
 OUTPUT_PWM_MIN = 0 # Output PWM minimum value
@@ -58,15 +58,18 @@ def pointCloudToNumpyArray(point_Cloud):
     return np_points
 
 def applyYRotation(point_Cloud, theta):
-    rotated_point_Cloud = np.zeros(point_Cloud.shape)
+    """Apply a Y axis rotation matrix to pointcloud  """
     rot = [
         [ math.cos(theta), 0, math.sin(theta)],
         [ 0           , 1, 0           ],
         [-math.sin(theta), 0, math.cos(theta)]
     ]
-    for rotated, origin in zip(rotated_point_Cloud, point_Cloud):
-        rotated = np.dot(rot, origin)
-    return rotated
+    height = point_Cloud.shape[0]
+    width = point_Cloud.shape[1]
+    rotated_point_Cloud = np.zeros((height * width, 3), dtype=np.float32)
+    for i in range(len(point_Cloud)):
+        rotated_point_Cloud[i] = np.dot(point_Cloud[i],rot)
+    return rotated_point_Cloud
 
 def visualizePointCloud(viewer ,point_Cloud):
     """ visualize a numpy point cloud to a viewer """
@@ -84,15 +87,21 @@ def modeCallBack(msg):
         print("Changing Mode to Repelent")
         Mode = repelentMode
 
-def pointCloudCallback(msg,front, angle):
+def pointCloudCallback(msg, args):
     """ Callback function for front ToF sensor """
+    # parse arg consist of boolean front and int angle  
+    
+    front = args[0]
+    angle = args[1]
+
     # change from pointcloud2 to numpy
     pc = ros_numpy.numpify(msg)
     Pointcloud_array = pointCloudToNumpyArray(pc)
 
     # To maximize the FOV of the TOF sensor we apply a slight pitch ( -5 deg for short/fat ToF and 16 deg for long ToF ) so to get the correct distance we apply a Y axis rotation matrix
-    rotated_Pointcloud_array = applyYRotation(Pointcloud_array,angle)
-
+    # Encountered some performance issue, Pointcloud_array shape is (38528, 3) seem to use too many resource and lagging the machine
+    # rotated_Pointcloud_array = applyYRotation(Pointcloud_array,angle)
+    rotated_Pointcloud_array = Pointcloud_array
     # visualize if USEVISUAL is TRUE 
     if(USEVISUAL):
         if(front):
@@ -172,8 +181,8 @@ if __name__ == "__main__":
     user_input_sub_l = rospy.Subscriber('/roboy/pinky/middleware/espchair/wheels/left', Int16, userInputCallback, False)
 
     # initialize pointlcloud subscriber for ToF sensor
-    point_cloud_1_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudCallback, True, TOF_1_PITCH)
-    point_cloud_2_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, False, TOF_2_PITCH)
+    point_cloud_1_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudCallback, (True, TOF_1_PITCH))
+    point_cloud_2_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, (False, TOF_2_PITCH))
     
     print("publishing to /roboy/pinky/middleware/espchair/wheels/assisted_navigation. Spinning...")
     rospy.spin()
