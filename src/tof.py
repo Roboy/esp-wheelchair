@@ -74,15 +74,18 @@ def pointCloudToNumpyArray(point_Cloud):
     return np_points
 
 def applyYRotation(point_Cloud, theta):
-    rotated_point_Cloud = np.zeros(point_Cloud.shape)
+    """Apply a Y axis rotation matrix to pointcloud  """
     rot = [
         [ math.cos(theta), 0, math.sin(theta)],
         [ 0           , 1, 0           ],
         [-math.sin(theta), 0, math.cos(theta)]
     ]
-    for rotated, origin in zip(rotated_point_Cloud, point_Cloud):
-        rotated = np.dot(rot, origin)
-    return rotated
+    height = point_Cloud.shape[0]
+    width = point_Cloud.shape[1]
+    rotated_point_Cloud = np.zeros((height * width, 3), dtype=np.float32)
+    for i in range(len(point_Cloud)):
+        rotated_point_Cloud[i] = np.dot(point_Cloud[i],rot)
+    return rotated_point_Cloud
 
 def visualizePointCloud(viewer ,point_Cloud):
     """ visualize a numpy point cloud to a viewer """
@@ -108,14 +111,21 @@ def repelentFieldCallBack(msg):
     elif(msg.data == 2):
         print("Changing Repelelent field to Quadratic")
         
-def pointCloudCallback(msg,front, angle):
+def pointCloudCallback(msg, args):
     """ Callback function for front ToF sensor """
+    # parse arg consist of boolean front and int angle  
+    
+    front = args[0]
+    angle = args[1]
+
     # change from pointcloud2 to numpy
     pc = ros_numpy.numpify(msg)
     Pointcloud_array = pointCloudToNumpyArray(pc)
 
     # To maximize the FOV of the TOF sensor we apply a slight pitch ( -5 deg for short/fat ToF and 16 deg for long ToF ) so to get the correct distance we apply a Y axis rotation matrix
-    rotated_Pointcloud_array = applyYRotation(Pointcloud_array,angle)
+    # Encountered some performance issue, Pointcloud_array shape is (38528, 3) seem to use too many resource and lagging the machine
+    # rotated_Pointcloud_array = applyYRotation(Pointcloud_array,angle)
+    rotated_Pointcloud_array = Pointcloud_array
 
     # visualize if USE_VISUAL_POINT_CLOUD is TRUE 
     if(USE_VISUAL_POINT_CLOUD):
@@ -198,9 +208,9 @@ if __name__ == "__main__":
     user_input_sub_r = rospy.Subscriber(RIGHT_MOTOR_TOPIC_INPUT, Int16, userInputCallback, True)
     user_input_sub_l = rospy.Subscriber(LEFT_MOTOR_TOPIC_INPUT, Int16, userInputCallback, False)
 
-    # initialize pointlcloud subscriber for ToF sensor args = (front, PitchAngle)
+    # initialize pointlcloud subscriber for ToF sensor
     # ToF 1 for the back hence first arg is False
-    point_cloud_1_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudCallback, (False, TOF_1_PITCH)) 
+    point_cloud_1_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudCallback, (False, TOF_1_PITCH))
     # ToF 2 for the front hence first arg is True
     point_cloud_2_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, (True, TOF_2_PITCH))
     
