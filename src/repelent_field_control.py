@@ -24,8 +24,8 @@ class RepelentMode:
     
     def setFunction(self, function):    
         """ set memeber variable function """
-        print("Changing Repelelent field to ", function)
         self.Function = function
+        print("Changing Repelelent field to ", self.Function)
 
     def control(self, inputLinear, inputAngular):
         """ give an output based of the distance to an obstacle """
@@ -52,7 +52,7 @@ class RepelentMode:
         if inputLinear > 0:
             outputLinear = pow(self.DistFront,2)
         elif inputLinear < 0:
-            outputLinear = -1*pow(self.DistFront,2)
+            outputLinear = -pow(self.DistBack,2)
         else:
             outputLinear = 0
         return outputLinear, inputAngular
