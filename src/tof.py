@@ -23,9 +23,9 @@ from user_input_handler import *
 from image_handler import ImageHandler
 # Parameters
 USE_VISUAL_POINT_CLOUD = False # USE_VISUAL_POINT_CLOUD if true will open a window that show the ToF sensor output
-USE_REAR_CAMERA = True # USE_REAR_CAMERA if true will publish a data of rear camera 
+USE_REAR_CAMERA = False # USE_REAR_CAMERA if true will publish a data of rear camera 
 
-USE_EMERGENCYSTOP = 1 # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
+USE_EMERGENCYSTOP = True # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
 
 INPUT_PWM_MIN = 0 # Input PWM minimum value
 INPUT_PWM_RANGE = 30 # Input PWM range value
@@ -163,10 +163,10 @@ def userInputCallback(msg, right):
     outputLinear,outputAngular = Mode.control(inputLinear,inputAngular)
 
     # if the minimum distance is within a certaun threshold then brake
-    if(repelentMode.getDistanceFront() < THRESHOLD_EMERGENCYSTOP and inputLinear > 0): # this is the front ToF
+    if(repelentMode.getDistanceFront() < THRESHOLD_EMERGENCYSTOP and inputLinear > 0 and USE_EMERGENCYSTOP): # this is the front ToF
         print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
         outputLinear = 0
-    elif (repelentMode.getDistanceBack() < THRESHOLD_EMERGENCYSTOP and inputLinear < 0): # this is the back ToF
+    elif (repelentMode.getDistanceBack() < THRESHOLD_EMERGENCYSTOP and inputLinear < 0 and USE_EMERGENCYSTOP): # this is the back ToF
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
         outputLinear = 0
     # Check if wheelchair_emergency_stopped is defined 
