@@ -54,7 +54,7 @@ inputAngular = None
 manualMode = ManualMode()
 repelentMode = RepelentMode()
 userInputHandler = UserInputHandler(INPUT_PWM_MIN, INPUT_PWM_RANGE)
-Mode = manualMode
+Mode = repelentMode
 
 sign = lambda a: (a>0) - (a<0)
     
@@ -96,6 +96,10 @@ def visualizePointCloud(viewer ,point_Cloud):
 
 def modeCallBack(msg):
     """ Callback function for topic  '/roboy/pinky/middleware/espchair/wheels/mode' to change the drive mode"""
+    """
+    to change the mode do 
+    rostopic pub /roboy/pinky/middleware/espchair/wheels/mode std_msgs/Int16 1
+    """
     if(msg.data == 1):
         print("Changing Mode to Manual")
         Mode = manualMode
@@ -105,11 +109,16 @@ def modeCallBack(msg):
 
 def repelentFieldCallBack(msg):
     """ Callback funtion for '/roboy/pinky/middleware/espchair/wheels/repelent_field' to change the tye of repellent field """
+    """
+    to change the function do 
+    rostopic pub /roboy/pinky/middleware/espchair/wheels/repelent_field std_msgs/Int16 1
+    """
     if(msg.data == 1):
         print("Changing Repelelent field to Linear")
-        
+        repelentMode.setFunction(msg.data)
     elif(msg.data == 2):
         print("Changing Repelelent field to Quadratic")
+        repelentMode.setFunction(msg.data)
         
 def pointCloudCallback(msg, args):
     """ Callback function for front ToF sensor """

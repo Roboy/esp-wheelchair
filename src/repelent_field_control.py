@@ -24,13 +24,14 @@ class RepelentMode:
     
     def setFunction(self, function):    
         """ set memeber variable function """
+        print("Changing Repelelent field to ", function)
         self.Function = function
 
     def control(self, inputLinear, inputAngular):
         """ give an output based of the distance to an obstacle """
-        if(function == 1): # Linear
+        if(self.Function == 1): # Linear
             outputLinear, outputAngular = self.linear(inputLinear,inputAngular)
-        elif(function == 2): # Quadratic
+        elif(self.Function == 2): # Quadratic
             outputLinear, outputAngular = self.quadratic(inputLinear,inputAngular)
         else: # if undefined defaults to linear
             outputLinear, outputAngular = self.quadratic(inputLinear,inputAngular)
