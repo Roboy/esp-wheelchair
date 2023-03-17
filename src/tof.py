@@ -20,7 +20,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from manual_control import * 
 from repelent_field_control import *
 from user_input_handler import *
-
+from image_handler import ImageHandler
 # Parameters
 USE_VISUAL_POINT_CLOUD = False # USE_VISUAL_POINT_CLOUD if true will open a window that show the ToF sensor output
 USE_REAR_CAMERA = True # USE_REAR_CAMERA if true will publish a data of rear camera 
@@ -223,10 +223,8 @@ if __name__ == "__main__":
     # ToF 2 for the front hence first arg is True
     point_cloud_2_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, (True, TOF_2_PITCH))
     
-    rear_image_pub = rospy.Publisher("rear_image",Image, queue_size=10) 
-    bridge = CvBridge()
-    rear_image_sub = rospy.Subscriber("/tof1_driver/gray_image",Image,rearCameraCallback)
-   
+    if (USE_REAR_CAMERA):
+        imageHandler = ImageHandler("/tof1_driver/gray_image")
 
     print("publishing to /roboy/pinky/middleware/espchair/wheels/assisted_navigation. Spinning...")
     rospy.spin()
