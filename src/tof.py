@@ -7,29 +7,45 @@ python3 src/tof.py
 """
 import rospy
 from std_msgs.msg import Float64, Int16
-from sensor_msgs.msg import PointCloud2
+from sensor_msgs.msg import PointCloud2, Image
 from geometry_msgs.msg import Twist
-import pcl
 import ros_numpy
+
+import pcl
 import numpy as np
 import math
+import cv2
+from cv_bridge import CvBridge, CvBridgeError
+
 from manual_control import * 
 from repelent_field_control import *
 from user_input_handler import *
 
 # Parameters
-USEVISUAL = False # USEVISUAL if true will open a window that show the ToF sensor output
+USE_VISUAL_POINT_CLOUD = False # USE_VISUAL_POINT_CLOUD if true will open a window that show the ToF sensor output
+USE_REAR_CAMERA = True # USE_REAR_CAMERA if true will publish a data of rear camera 
+
+USE_EMERGENCYSTOP = 1 # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
+
 INPUT_PWM_MIN = 0 # Input PWM minimum value
 INPUT_PWM_RANGE = 30 # Input PWM range value
 OUTPUT_PWM_MIN = 0 # Output PWM minimum value
 OUTPUT_PWM_RANGE = 0 # Output PWM range value
-USE_EMERGENCYSTOP = 1 # Will use emergency stop
-EMERGENCYSTOPTHRESHOLD = 0.1 # Emergency stop threshold roboy will stop if it detect a point below the thereshold
+
+THRESHOLD_EMERGENCYSTOP = 0.1 # Emergency stop threshold roboy will stop if it detect a point below the thereshold
+
 TOF_1_PITCH = 11
 TOF_2_PITCH = -5
 
+LEFT_MOTOR_TOPIC_OUTPUT = "/roboy/pinky/middleware/espchair/wheels/left/adjusted"
+RIGHT_MOTOR_TOPIC_OUTPUT = "/roboy/pinky/middleware/espchair/wheels/right/adjusted"
+ASSISTED_NAVIGATION_TOPIC_OUTPUT = '/roboy/pinky/middleware/espchair/wheels/assisted_navigation'
+LEFT_MOTOR_TOPIC_INPUT = "/roboy/pinky/middleware/espchair/wheels/left"
+RIGHT_MOTOR_TOPIC_INPUT = "/roboy/pinky/middleware/espchair/wheels/right"
+
+
 # variable initialization
-if(USEVISUAL):
+if(USE_VISUAL_POINT_CLOUD):
     import pcl.pcl_visualization
     viewer_front = pcl.pcl_visualization.PCLVisualizering()
     viewer_back = pcl.pcl_visualization.PCLVisualizering()
@@ -84,6 +100,14 @@ def modeCallBack(msg):
         print("Changing Mode to Repelent")
         Mode = repelentMode
 
+def repelentFieldCallBack(msg):
+    """ Callback funtion for '/roboy/pinky/middleware/espchair/wheels/repelent_field' to change the tye of repellent field """
+    if(msg.data == 1):
+        print("Changing Repelelent field to Linear")
+        
+    elif(msg.data == 2):
+        print("Changing Repelelent field to Quadratic")
+        
 def pointCloudCallback(msg,front, angle):
     """ Callback function for front ToF sensor """
     # change from pointcloud2 to numpy
@@ -93,8 +117,8 @@ def pointCloudCallback(msg,front, angle):
     # To maximize the FOV of the TOF sensor we apply a slight pitch ( -5 deg for short/fat ToF and 16 deg for long ToF ) so to get the correct distance we apply a Y axis rotation matrix
     rotated_Pointcloud_array = applyYRotation(Pointcloud_array,angle)
 
-    # visualize if USEVISUAL is TRUE 
-    if(USEVISUAL):
+    # visualize if USE_VISUAL_POINT_CLOUD is TRUE 
+    if(USE_VISUAL_POINT_CLOUD):
         if(front):
             visualizePointCloud(viewer_front, rotated_Pointcloud_array)
         else:
@@ -120,10 +144,10 @@ def userInputCallback(msg, right):
     outputLinear,outputAngular = Mode.control(inputLinear,inputAngular)
 
     # if the minimum distance is within a certaun threshold then brake
-    if(repelentMode.getDistanceFront() < EMERGENCYSTOPTHRESHOLD and inputLinear > 0): # this is the front ToF
+    if(repelentMode.getDistanceFront() < THRESHOLD_EMERGENCYSTOP and inputLinear > 0): # this is the front ToF
         print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
         outputLinear = 0
-    elif (repelentMode.getDistanceBack() < EMERGENCYSTOPTHRESHOLD and inputLinear < 0): # this is the back ToF
+    elif (repelentMode.getDistanceBack() < THRESHOLD_EMERGENCYSTOP and inputLinear < 0): # this is the back ToF
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
         outputLinear = 0
     # Check if wheelchair_emergency_stopped is defined 
@@ -152,7 +176,8 @@ def userInputCallback(msg, right):
     
     pub_l.publish(l)
     pub_r.publish(r)
-
+def rearCameraCallback(msg):
+    return
 if __name__ == "__main__":
     # init main loop
     rospy.init_node('assisted_Navigation')
@@ -160,21 +185,30 @@ if __name__ == "__main__":
     # initialize mode subscriber, used for changing the mode through the topic /roboy/pinky/middleware/espchair/wheels/mode
     mode_sub = rospy.Subscriber('/roboy/pinky/middleware/espchair/wheels/mode', Int16, modeCallBack)
 
+    mode_repelent_sub = rospy.Subscriber('/roboy/pinky/middleware/espchair/wheels/repelent_field', Int16, repelentFieldCallBack)
+
     # initialize wheels publisher
-    pub_l = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/left/adjusted", Int16, queue_size=10)
-    pub_r = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/right/adjusted", Int16, queue_size=10)
+    pub_l = rospy.Publisher(LEFT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=10)
+    pub_r = rospy.Publisher(RIGHT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=10)
     
     # initialize TWIST publisher for simulation
-    assisted_navigation_pub = rospy.Publisher('/roboy/pinky/middleware/espchair/wheels/assisted_navigation', Twist, queue_size=10)
+    assisted_navigation_pub = rospy.Publisher(ASSISTED_NAVIGATION_TOPIC_OUTPUT, Twist, queue_size=10)
     
     # initialize subscriber for user input 
-    user_input_sub_r = rospy.Subscriber('/roboy/pinky/middleware/espchair/wheels/right', Int16, userInputCallback, True)
-    user_input_sub_l = rospy.Subscriber('/roboy/pinky/middleware/espchair/wheels/left', Int16, userInputCallback, False)
+    user_input_sub_r = rospy.Subscriber(RIGHT_MOTOR_TOPIC_INPUT, Int16, userInputCallback, True)
+    user_input_sub_l = rospy.Subscriber(LEFT_MOTOR_TOPIC_INPUT, Int16, userInputCallback, False)
 
-    # initialize pointlcloud subscriber for ToF sensor
-    point_cloud_1_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudCallback, True, TOF_1_PITCH)
-    point_cloud_2_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, False, TOF_2_PITCH)
+    # initialize pointlcloud subscriber for ToF sensor args = (front, PitchAngle)
+    # ToF 1 for the back hence first arg is False
+    point_cloud_1_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudCallback, (False, TOF_1_PITCH)) 
+    # ToF 2 for the front hence first arg is True
+    point_cloud_2_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, (True, TOF_2_PITCH))
     
+    rear_image_pub = rospy.Publisher("rear_image",Image, queue_size=10) 
+    bridge = CvBridge()
+    rear_image_sub = rospy.Subscriber("/tof1_driver/gray_image",Image,rearCameraCallback)
+   
+
     print("publishing to /roboy/pinky/middleware/espchair/wheels/assisted_navigation. Spinning...")
     rospy.spin()
     
