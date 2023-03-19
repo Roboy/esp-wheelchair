@@ -23,13 +23,13 @@ import rospy
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Int16
 
-PWM_MIN = 5
-PWMRANGE = 40
+PWM_MIN = 0
+PWMRANGE = 30
 
 rospy.init_node("wheelchair_twist_converter")
 
-pub_l = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/left", Int16, queue_size=1)
-pub_r = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/right", Int16, queue_size=1)
+pub_l = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/left/input", Int16, queue_size=1)
+pub_r = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/right/input", Int16, queue_size=1)
 
 sign = lambda a: (a>0) - (a<0)
 
