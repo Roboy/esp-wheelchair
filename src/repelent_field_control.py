@@ -29,6 +29,7 @@ class RepelentMode:
 
     def control(self, inputLinear, inputAngular):
         """ give an output based of the distance to an obstacle """
+        print("Minimum Distance Back : ", self.DistBack)
         if(self.Function == 1): # Linear
             outputLinear, outputAngular = self.linear(inputLinear,inputAngular)
         elif(self.Function == 2): # Quadratic
@@ -50,9 +51,9 @@ class RepelentMode:
     def quadratic(self, inputLinear, inputAngular):
         """ adjust speed linearly to the distance of nearest obstacle """
         if inputLinear > 0:
-            outputLinear = pow(self.DistFront,2)
+            outputLinear = 1.5*pow(self.DistFront,2)
         elif inputLinear < 0:
-            outputLinear = -pow(self.DistBack,2)
+            outputLinear = -1.5*pow(self.DistBack,2)
         else:
             outputLinear = 0
         return outputLinear, inputAngular
