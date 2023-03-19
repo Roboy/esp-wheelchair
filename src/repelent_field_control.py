@@ -33,6 +33,8 @@ class RepelentMode:
             outputLinear, outputAngular = self.linear(inputLinear,inputAngular)
         elif(self.Function == 2): # Quadratic
             outputLinear, outputAngular = self.quadratic(inputLinear,inputAngular)
+        elif(self.Function == 3): # Quadratic
+            outputLinear, outputAngular = self.quadratic(inputLinear,inputAngular)
         else: # if undefined defaults to linear
             outputLinear, outputAngular = self.quadratic(inputLinear,inputAngular)
         return outputLinear,outputAngular
@@ -53,6 +55,16 @@ class RepelentMode:
             outputLinear = pow(self.DistFront,2)
         elif inputLinear < 0:
             outputLinear = -pow(self.DistBack,2)
+        else:
+            outputLinear = 0
+        return outputLinear, inputAngular
+
+    def quadratic2(self, inputLinear, inputAngular):
+        """ adjust speed linearly to the distance of nearest obstacle """
+        if inputLinear > 0:
+            outputLinear = 2*pow(self.DistFront,2)
+        elif inputLinear < 0:
+            outputLinear = -2*pow(self.DistBack,2)
         else:
             outputLinear = 0
         return outputLinear, inputAngular
