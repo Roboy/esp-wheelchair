@@ -75,16 +75,25 @@ def pointCloudCallback(msg, args):
     # To maximize the FOV of the TOF sensor we apply a slight pitch (-5 deg for short/fat ToF and 16 deg for long ToF ) so to get the correct distance we apply a Y axis rotation matrix
     # Encountered some performance issue, Pointcloud_array shape is (38528, 3) seem to use too many resource and lagging the machine
     # rotated_Pointcloud_array = applyYRotation(Pointcloud_array,angle)
-    rotated_Pointcloud_array = Pointcloud_array
 
     # visualize if USE_VISUAL_POINT_CLOUD is TRUE 
     if(USE_VISUAL_POINT_CLOUD):
         if(front):
-            visualizePointCloud(viewer_front, rotated_Pointcloud_array)
+            visualizePointCloud(viewer_front, Pointcloud_array)
         else:
-            visualizePointCloud(viewer_back, rotated_Pointcloud_array)
+            visualizePointCloud(viewer_back, Pointcloud_array)
+
+    print(Pointcloud_array.shape)
     # find the nearest point and store it at repelent Class
-    minDist =  np.nanmin(rotated_Pointcloud_array[:,2])
+    minDist =  np.nanmin(Pointcloud_array[:,2])
+    print(minDist)
+    # publish the minimum distance to the MIN_DIST TOPIC
+    if(front):
+        min_dist_front_pub.publish(minDist)
+        print("Minimum distance front : ", minDist)
+    else:
+        min_dist_back_pub.publish(minDist)
+        print("Minimum distance back : ", minDist)
 
 if __name__ == "__main__":
     # init main loop
@@ -96,9 +105,9 @@ if __name__ == "__main__":
     # ToF 2 for the front hence first arg is True
     point_cloud_2_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, (True, TOF_2_PITCH))
 
-    min_dist_front_pub = rospy.Publisher(MIN_DIST_FRONT_TOPIC, Int16, queue_size=3)
-    min_dist_back_pub = rospy.Publisher(MIN_DIST_BACK_TOPIC, Int16, queue_size=3)
+    min_dist_front_pub = rospy.Publisher(MIN_DIST_FRONT_TOPIC, Float64, queue_size=3)
+    min_dist_back_pub = rospy.Publisher(MIN_DIST_BACK_TOPIC, Float64, queue_size=3)
 
-    print("publishing to /roboy/pinky/middleware/espchair/wheels/assisted_navigation. Spinning...")
+    print("publishing to " + MIN_DIST_FRONT_TOPIC + " and " + MIN_DIST_BACK_TOPIC + " Spinning...")
     rospy.spin()
     

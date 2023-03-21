@@ -1,3 +1,10 @@
+"""
+Usage:
+
+cd esp-wheelchair
+python3 src/assistedNavigation_aio.py
+
+"""
 import rospy
 from std_msgs.msg import Float64, Int16
 from sensor_msgs.msg import PointCloud2, Image
@@ -13,6 +20,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from manual_control import * 
 from repelent_field_control import *
 from user_input_handler import *
+from drive_mode import *
 
 # Parameters
 USE_VISUAL_POINT_CLOUD = False # USE_VISUAL_POINT_CLOUD if true will open a window that show the ToF sensor output
@@ -39,18 +47,54 @@ RIGHT_MOTOR_TOPIC_INPUT = "/roboy/pinky/middleware/espchair/wheels/right/input"
 MIN_DIST_FRONT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/dist/front"
 MIN_DIST_BACK_TOPIC = "/roboy/pinky/middleware/espchair/wheels/dist/back"
 
+# variable initialization
+if(USE_VISUAL_POINT_CLOUD):
+    import pcl.pcl_visualization
+    viewer_front = pcl.pcl_visualization.PCLVisualizering()
+    viewer_back = pcl.pcl_visualization.PCLVisualizering()
 inputLinear = None
 inputAngular = None
 manualMode = ManualMode()
 repelentMode = RepelentMode()
 userInputHandler = UserInputHandler(INPUT_PWM_MIN, INPUT_PWM_RANGE)
-Mode = manualMode
+mode = DriveMode(manualMode)
 
 sign = lambda a: (a>0) - (a<0)
     
 def mapPwm(x, out_min, out_max):
     """Map the x value 0.0 - 1.0 to out_min to out_max"""
     return x * (out_max - out_min) + out_min
+
+def pointCloudToNumpyArray(point_Cloud):
+    """ convert a ROS's pointcloud data structure to a numpy array"""
+    height = point_Cloud.shape[0]
+    width = point_Cloud.shape[1]
+    np_points = np.zeros((height * width, 3), dtype=np.float32)
+    np_points[:, 0] = np.resize(point_Cloud['x'], height * width)
+    np_points[:, 1] = np.resize(point_Cloud['y'], height * width)
+    np_points[:, 2] = np.resize(point_Cloud['z'], height * width)
+    return np_points
+
+def applyYRotation(point_Cloud, theta):
+    """Apply a Y axis rotation matrix to pointcloud  """
+    rot = [
+        [ math.cos(theta), 0, math.sin(theta)],
+        [ 0           , 1, 0           ],
+        [-math.sin(theta), 0, math.cos(theta)]
+    ]
+    height = point_Cloud.shape[0]
+    width = point_Cloud.shape[1]
+    rotated_point_Cloud = np.zeros((height * width, 3), dtype=np.float32)
+    for i in range(len(point_Cloud)):
+        rotated_point_Cloud[i] = np.dot(point_Cloud[i],rot)
+    return rotated_point_Cloud
+
+def visualizePointCloud(viewer ,point_Cloud):
+    """ visualize a numpy point cloud to a viewer """
+    p = pcl.PointCloud(np.array(point_Cloud, dtype=np.float32))
+    viewer.AddPointCloud(p, b'scene_cloud_front', 0)
+    viewer.SpinOnce()
+    viewer.RemovePointCloud( b'scene_cloud_front', 0)
 
 def modeCallBack(msg):
     """ Callback function for topic  '/roboy/pinky/middleware/espchair/wheels/mode' to change the drive mode"""
@@ -60,10 +104,10 @@ def modeCallBack(msg):
     """
     if(msg.data == 1):
         print("Changing Mode to Manual")
-        Mode = manualMode
+        mode.setMode(manualMode)
     elif(msg.data == 2):
         print("Changing Mode to Repelent")
-        Mode = repelentMode
+        mode.setMode(repelentMode)
 
 def repelentFieldCallBack(msg):
     """ Callback funtion for '/roboy/pinky/middleware/espchair/wheels/repelent_field' to change the tye of repellent field """
@@ -81,15 +125,34 @@ def repelentFieldCallBack(msg):
         print("Changing Repelelent field to Quadratic")
         repelentMode.setFunction(msg.data)
         
-def minDistanceCallback(msg, args):
+def pointCloudCallback(msg, args):
     """ Callback function for front ToF sensor """
     # parse arg consist of boolean front and int angle  
-    front = args[0]
     
+    front = args[0]
+    angle = args[1]
+
+    # change from pointcloud2 to numpy
+    pc = ros_numpy.numpify(msg)
+    Pointcloud_array = pointCloudToNumpyArray(pc)
+
+    # To maximize the FOV of the TOF sensor we apply a slight pitch (-5 deg for short/fat ToF and 16 deg for long ToF ) so to get the correct distance we apply a Y axis rotation matrix
+    # Encountered some performance issue, Pointcloud_array shape is (38528, 3) seem to use too many resource and lagging the machine
+    # rotated_Pointcloud_array = applyYRotation(Pointcloud_array,angle)
+    rotated_Pointcloud_array = Pointcloud_array
+
+    # visualize if USE_VISUAL_POINT_CLOUD is TRUE 
+    if(USE_VISUAL_POINT_CLOUD):
+        if(front):
+            visualizePointCloud(viewer_front, rotated_Pointcloud_array)
+        else:
+            visualizePointCloud(viewer_back, rotated_Pointcloud_array)
+    # find the nearest point and store it at repelent Class
+    minDist =  np.nanmin(rotated_Pointcloud_array[:,2])
     if(front):
-        repelentMode.setDistanceFront(msg.data)
+        repelentMode.setDistanceFront(minDist)
     else:
-        repelentMode.setDistanceBack(msg.data)
+        repelentMode.setDistanceBack(minDist)
 
 def userInputCallback(msg, right):   
     """ 
@@ -102,7 +165,7 @@ def userInputCallback(msg, right):
     # call the current Mode control function to get the adjusted output
     inputLinear,inputAngular = userInputHandler.getUserInput()
     print("inputLinear,inputAngular : ", inputLinear,inputAngular)
-    outputLinear,outputAngular = Mode.control(inputLinear,inputAngular)
+    outputLinear,outputAngular = mode.control(inputLinear,inputAngular)
 
     # if the minimum distance is within a certaun threshold then brake
     if(repelentMode.getDistanceFront() < THRESHOLD_EMERGENCYSTOP and inputLinear > 0 and USE_EMERGENCYSTOP): # this is the front ToF
@@ -141,7 +204,7 @@ def userInputCallback(msg, right):
 
 if __name__ == "__main__":
     # init main loop
-    rospy.init_node('AssistedNavigation_main')
+    rospy.init_node('assisted_Navigation')
     
     # initialize mode subscriber, used for changing the mode through the topic /roboy/pinky/middleware/espchair/wheels/mode
     mode_sub = rospy.Subscriber('/roboy/pinky/middleware/espchair/wheels/mode', Int16, modeCallBack)
@@ -160,14 +223,11 @@ if __name__ == "__main__":
     user_input_sub_r = rospy.Subscriber(RIGHT_MOTOR_TOPIC_INPUT, Int16, userInputCallback, True)
     user_input_sub_l = rospy.Subscriber(LEFT_MOTOR_TOPIC_INPUT, Int16, userInputCallback, False)
 
-    min_dist_front_pub = rospy.Subscriber(MIN_DIST_FRONT_TOPIC, Int16, minDistanceCallback, (True))
-    min_dist_back_pub = rospy.Subscriber(MIN_DIST_BACK_TOPIC, Int16, minDistanceCallback, (False))
-
-    # # initialize pointlcloud subscriber for ToF sensor
-    # # ToF 1 for the back hence first arg is False
-    # point_cloud_1_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, minDistanceCallback, (False))
-    # # ToF 2 for the front hence first arg is True
-    # point_cloud_2_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, minDistanceCallback, (True))
+    # initialize pointlcloud subscriber for ToF sensor
+    # ToF 1 for the back hence first arg is False
+    point_cloud_1_sub = rospy.Subscriber('/tof1_driver/point_cloud', PointCloud2, pointCloudCallback, (False, TOF_1_PITCH))
+    # ToF 2 for the front hence first arg is True
+    point_cloud_2_sub = rospy.Subscriber('/tof2_driver/point_cloud', PointCloud2, pointCloudCallback, (True, TOF_2_PITCH))
 
     print("publishing to /roboy/pinky/middleware/espchair/wheels/assisted_navigation. Spinning...")
     rospy.spin()
