@@ -20,7 +20,7 @@ USE_VISUAL_POINT_CLOUD = False # USE_VISUAL_POINT_CLOUD if true will open a wind
 USE_REAR_CAMERA = False # USE_REAR_CAMERA if true will publish a data of rear camera 
 
 USE_EMERGENCYSTOP = True # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
-USE_SIMULATION = False
+USE_SIMULATION = True
 
 INPUT_PWM_MIN = 0 # Input PWM minimum value
 INPUT_PWM_RANGE = 30 # Input PWM range value
@@ -34,9 +34,12 @@ TOF_2_PITCH = -5
 
 LEFT_MOTOR_TOPIC_OUTPUT = "/roboy/pinky/middleware/espchair/wheels/left"
 RIGHT_MOTOR_TOPIC_OUTPUT = "/roboy/pinky/middleware/espchair/wheels/right"
-ASSISTED_NAVIGATION_TOPIC_OUTPUT = '/roboy/pinky/middleware/espchair/wheels/assisted_navigation'
+
 LEFT_MOTOR_TOPIC_INPUT = "/roboy/pinky/middleware/espchair/wheels/left/input"
 RIGHT_MOTOR_TOPIC_INPUT = "/roboy/pinky/middleware/espchair/wheels/right/input"
+
+ASSISTED_NAVIGATION_TOPIC_OUTPUT = '/roboy/pinky/middleware/espchair/wheels/assisted_navigation'
+
 MIN_DIST_FRONT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/dist/front"
 MIN_DIST_BACK_TOPIC = "/roboy/pinky/middleware/espchair/wheels/dist/back"
 
