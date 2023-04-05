@@ -59,7 +59,7 @@ def userInputCallback(msg, right):
     # call the current Mode control function to get the adjusted output
     inputLinear,inputAngular = userInputHandler.getUserInput()
     print("inputLinear,inputAngular : ", inputLinear,inputAngular)
-
+    outputLinear, outputAngular = inputLinear, inputAngular 
     # if the minimum distance is within a certaun threshold then brake
     if((irState.get(IRState._FRONT_RIGHT) or irState.get(IRState._FRONT_LEFT)) and inputLinear > 0 and USE_EMERGENCYSTOP): # this is the front ToF
         print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
@@ -68,7 +68,6 @@ def userInputCallback(msg, right):
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
         outputLinear = 0
 
-    outputLinear, outputAngular = inputLinear,inputAngular 
     # publish the output to wheels 
     rospy.loginfo_throttle(5, "Publishing pwm..")
     x = max(min(outputLinear, 1.0), -1.0)
