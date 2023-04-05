@@ -14,4 +14,8 @@ roslaunch gazebo_ros shapes_world.launch
 roslaunch robody_sim spawn.launch
 roslaunch robody_sim spawndefault.launch
 
+rosrun gazebo spawn_model -file /home/ronggurmwp/robody_nav_ws/src/robody_sim/urdf/human.urdf -urdf -z 1 -model my_object
+
+rosrun gazebo spawn_model -file "/home/ronggurmwp/robody_nav_ws/src/robody_sim/urdf/human.urdf" -urdf -z 1 -model my_object
+
 rosrun teleop_twist_keyboard teleop_twist_keyboard.py

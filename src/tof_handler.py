@@ -97,7 +97,7 @@ def pointCloudCallback(msg, args):
 
 if __name__ == "__main__":
     # init main loop
-    rospy.init_node('AssistedNavigation_tof')
+    rospy.init_node("Tof_assistedNavigation")
     
     # initialize pointlcloud subscriber for ToF sensor
     # ToF 1 for the back hence first arg is False
