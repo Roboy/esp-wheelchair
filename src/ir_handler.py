@@ -23,15 +23,15 @@ rospy.init_node("Ir_publisher")
 print("Initializing IR_publisher initialized")
 
 # Set up publishers for each IR sensor
-DIST_FRONT_RIGHT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/dist/front_right"
-DIST_FRONT_LEFT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/dist/front_left"
-DIST_BACK_RIGHT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/dist/back_right"
-DIST_BACK_LEFT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/dist/back_left"
+IR_FRONT_RIGHT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/ir/front_right"
+IR_FRONT_LEFT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/ir/front_left"
+IR_BACK_RIGHT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/ir/back_right"
+IR_BACK_LEFT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/ir/back_left"
 
-pub_front_right = rospy.Publisher(DIST_FRONT_RIGHT_TOPIC, Int16, queue_size=10)
-pub_front_left = rospy.Publisher(DIST_FRONT_LEFT_TOPIC, Int16, queue_size=10)
-pub_back_right = rospy.Publisher(DIST_BACK_RIGHT_TOPIC, Int16, queue_size=10)
-pub_back_left = rospy.Publisher(DIST_BACK_LEFT_TOPIC, Int16, queue_size=10)
+pub_front_right = rospy.Publisher(IR_FRONT_RIGHT_TOPIC, Int16, queue_size=10)
+pub_front_left = rospy.Publisher(IR_FRONT_LEFT_TOPIC, Int16, queue_size=10)
+pub_back_right = rospy.Publisher(IR_BACK_RIGHT_TOPIC, Int16, queue_size=10)
+pub_back_left = rospy.Publisher(IR_BACK_LEFT_TOPIC, Int16, queue_size=10)
 
 def main():
     while True:
