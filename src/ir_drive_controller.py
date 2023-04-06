@@ -1,11 +1,23 @@
+"""
+Usage:
+
+python ir_drive_controller.py
+python ir_publisher.py
+
+and if you are using teleop keyboard use 
+
+python twist_to_pwm.py
+rosrun teleop_twist_keyboard teleop_twist_keyboard.py
+
+"""
 import rospy
-from std_msgs.msg import Int16
+from std_msgs.msg import Int16, Int16MultiArray
 from geometry_msgs.msg import Twist
 
 import numpy as np
 
 from user_input_handler import UserInputHandler
-from ir_state import IRState
+from IR_State import IRState
 
 # Parameters
 USE_EMERGENCYSTOP = True # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
@@ -26,10 +38,11 @@ RIGHT_MOTOR_TOPIC_INPUT = "/roboy/pinky/middleware/espchair/wheels/right/input"
 ASSISTED_NAVIGATION_TOPIC_OUTPUT = '/roboy/pinky/middleware/espchair/wheels/assisted_navigation'
 
 # Set up publishers for each distance topic
-IR_FRONT_RIGHT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/ir/front_right"
-IR_FRONT_LEFT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/ir/front_left"
-IR_BACK_RIGHT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/ir/back_right"
-IR_BACK_LEFT_TOPIC = "/roboy/pinky/middleware/espchair/wheels/ir/back_left"
+IR_TOPIC = "/roboy/pinky/sensing/distance"
+IR_FRONT_RIGHT_ID = 0
+IR_FRONT_LEFT_ID = 1
+IR_BACK_RIGHT_ID = 2
+IR_BACK_LEFT_ID = 3
 
 userInputHandler = UserInputHandler(INPUT_PWM_MIN, INPUT_PWM_RANGE)
 irState = IRState()
@@ -81,8 +94,8 @@ def userInputCallback(msg, right):
     pub_motor_l.publish(l)
     pub_motor_r.publish(r)
 
-def irSensorCallback(msg, pos):
-    irState.set(pos,msg.data)
+def irSensorCallback(msg):
+    irState.set(msg.data)
     return
     
 if __name__ == "__main__":
@@ -101,11 +114,8 @@ if __name__ == "__main__":
     user_input_sub_r = rospy.Subscriber(RIGHT_MOTOR_TOPIC_INPUT, Int16, userInputCallback, True)
     user_input_sub_l = rospy.Subscriber(LEFT_MOTOR_TOPIC_INPUT, Int16, userInputCallback, False)
 
-    #Initialize subscriber for Ir sensor topic
-    front_right_sub = rospy.Subscriber(IR_FRONT_RIGHT_TOPIC, Int16, irSensorCallback, 1)
-    front_left_sub = rospy.Subscriber(IR_FRONT_LEFT_TOPIC, Int16, irSensorCallback, 2)
-    back_right_sub = rospy.Subscriber(IR_BACK_RIGHT_TOPIC, Int16, irSensorCallback, 3)
-    back_left_sub = rospy.Subscriber(IR_BACK_LEFT_TOPIC, Int16, irSensorCallback, 4)
+    #Initialize subscriber for Ir sensor
+    ir_sub = rospy.Subscriber(IR_TOPIC, Int16MultiArray, irSensorCallback)
 
     print("publishing to /roboy/pinky/middleware/espchair/wheels/assisted_navigation. Spinning...")
     rospy.spin()

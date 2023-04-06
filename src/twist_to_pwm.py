@@ -38,23 +38,18 @@ def mapPwm(x, out_min, out_max):
 
 
 def cb(msg):
-	if True:
-		rospy.loginfo_throttle(5, "Publishing pwm..")
-		x = max(min(msg.linear.x, 1.0), -1.0)
-		z = max(min(msg.angular.z, 1.0), -1.0)
+	rospy.loginfo_throttle(5, "Publishing pwm..")
+	x = max(min(msg.linear.x, 1.0), -1.0)
+	z = max(min(msg.angular.z, 1.0), -1.0)
 
-		l = (msg.linear.x - msg.angular.z) / 2.0
-		r = (msg.linear.x + msg.angular.z) / 2.0
+	l = (msg.linear.x - msg.angular.z) / 2.0
+	r = (msg.linear.x + msg.angular.z) / 2.0
 
-		lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
-		rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
+	lPwm = mapPwm(abs(l), PWM_MIN, PWMRANGE)
+	rPwm = mapPwm(abs(r), PWM_MIN, PWMRANGE)
 
-		pub_l.publish(int(sign(l)*lPwm))
-		pub_r.publish(int(sign(r)*rPwm))
-	else:
-		rospy.logwarn_throttle(1, "Emergency stop active. Ignoring cmd_vel")
-
-
+	pub_l.publish(int(sign(l)*lPwm))
+	pub_r.publish(int(sign(r)*rPwm))
 
 sub = rospy.Subscriber("/cmd_vel", Twist, cb)
 
