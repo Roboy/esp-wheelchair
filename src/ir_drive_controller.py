@@ -1,8 +1,8 @@
 """
 Usage:
 
+python ir_sensor_publisher.py
 python ir_drive_controller.py
-python ir_publisher.py
 
 and if you are using teleop keyboard use 
 
@@ -13,8 +13,6 @@ rosrun teleop_twist_keyboard teleop_twist_keyboard.py
 import rospy
 from std_msgs.msg import Int16, Int16MultiArray
 from geometry_msgs.msg import Twist
-
-import numpy as np
 
 from user_input_handler import UserInputHandler
 from IR_State import IRState
@@ -62,14 +60,14 @@ def userInputCallback(msg, right):
     userInputHandler.setUserInput(msg, right)
 
     # call the current Mode control function to get the adjusted output
-    inputLinear,inputAngular = userInputHandler.getUserInput()
-    print("inputLinear, inputAngular : ", inputLinear,inputAngular)
-    outputLinear, outputAngular = inputLinear, inputAngular 
+    outputLinear, outputAngular = userInputHandler.getUserInput()
+    print("inputLinear, inputAngular : ", outputLinear, outputAngular)
+
     # if the minimum distance is within a certaun threshold then brake
-    if((irState.get(IRState._FRONT_RIGHT) or irState.get(IRState._FRONT_LEFT)) and inputLinear > 0 and USE_EMERGENCYSTOP): # check if it about to collide in the front
+    if((irState.get(IRState._FRONT_RIGHT) or irState.get(IRState._FRONT_LEFT)) and outputLinear > 0 and USE_EMERGENCYSTOP): # check if it about to collide in the front
         print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
         outputLinear = 0
-    elif ((irState.get(IRState._BACK_RIGHT) or irState.get(IRState._BACK_RIGHT)) and inputLinear < 0 and USE_EMERGENCYSTOP): # check if it about to collide in the back
+    elif ((irState.get(IRState._BACK_RIGHT) or irState.get(IRState._BACK_RIGHT)) and outputLinear < 0 and USE_EMERGENCYSTOP): # check if it about to collide in the back
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
         outputLinear = 0
 
@@ -100,7 +98,7 @@ def irSensorCallback(msg):
     
 if __name__ == "__main__":
     # init main loop
-    rospy.init_node('Ir_AssistedNavigation_main')
+    rospy.init_node('Ir_drive_controller')
     
     # initialize wheels publisher
     pub_motor_l = rospy.Publisher(LEFT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=1)
