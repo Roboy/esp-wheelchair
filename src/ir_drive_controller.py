@@ -5,7 +5,7 @@ from geometry_msgs.msg import Twist
 import numpy as np
 
 from user_input_handler import UserInputHandler
-from IR_State import IRState
+from ir_state import IRState
 
 # Parameters
 USE_EMERGENCYSTOP = True # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
