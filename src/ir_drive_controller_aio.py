@@ -66,10 +66,10 @@ class UserInputHandler:
 # from IR_State import IRState
 class IRState:
     """ Manual Mode no modification between user input and output """
-    _FRONT_RIGHT_ID = 1
-    _FRONT_LEFT_ID = 2
-    _BACK_RIGHT_ID = 3
-    _BACK_LEFT_ID = 4
+    _FRONT_RIGHT_ID = 0
+    _FRONT_LEFT_ID = 1
+    _BACK_RIGHT_ID = 2
+    _BACK_LEFT_ID = 3
     def __init__(self):
         self.ir_sensor = [0,0,0,0]
         return
@@ -82,7 +82,7 @@ class IRState:
         return self.ir_sensor[pos]
     
 # Parameters
-USE_EMERGENCYSTOP = False # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
+USE_EMERGENCYSTOP = True # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
 USE_SIMULATION = True
 
 INPUT_PWM_MIN = 0 # Input PWM minimum value
