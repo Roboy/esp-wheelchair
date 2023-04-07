@@ -62,6 +62,7 @@ class UserInputHandler:
 
         # Convert the 0-1 range into a value in the right range.
         return rightMin + (valueScaled * rightRange)
+
 # from IR_State import IRState
 class IRState:
     """ Manual Mode no modification between user input and output """
@@ -100,6 +101,7 @@ ASSISTED_NAVIGATION_TOPIC_OUTPUT = '/roboy/pinky/middleware/espchair/wheels/assi
 
 # Set up publishers for each distance topic
 IR_TOPIC = "/roboy/pinky/sensing/distance"
+# these are the index of the infrared sensor published at IR_TOPIC
 IR_FRONT_RIGHT_ID = 0
 IR_FRONT_LEFT_ID = 1
 IR_BACK_RIGHT_ID = 2
@@ -107,12 +109,6 @@ IR_BACK_LEFT_ID = 3
 
 userInputHandler = UserInputHandler(INPUT_PWM_MIN, INPUT_PWM_RANGE)
 irState = IRState()
-
-sign = lambda a: (a>0) - (a<0)
-
-def mapPwm(x, out_min, out_max):
-    """Map the x value 0.0 - 1.0 to out_min to out_max"""
-    return x * (out_max - out_min) + out_min
 
 def userInputCallback(msg, right):   
     """ 
@@ -127,10 +123,10 @@ def userInputCallback(msg, right):
     print("inputLinear, inputAngular : ", outputLinear, outputAngular)
 
     # if the minimum distance is within a certaun threshold then brake
-    if((irState.get(irState._FRONT_RIGHT_ID) or irState.get(irState._FRONT_LEFT_ID)) and outputLinear > 0 and USE_EMERGENCYSTOP): # check if it about to collide in the front
+    if((not irState.get(irState._FRONT_RIGHT_ID) or not irState.get(irState._FRONT_LEFT_ID)) and outputLinear > 0 and USE_EMERGENCYSTOP): # check if it about to collide in the front
         print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
         outputLinear = 0
-    elif ((irState.get(irState._BACK_RIGHT_ID) or irState.get(irState._BACK_RIGHT_ID)) and outputLinear < 0 and USE_EMERGENCYSTOP): # check if it about to collide in the back
+    elif ((not irState.get(irState._BACK_RIGHT_ID) or not irState.get(irState._BACK_RIGHT_ID)) and outputLinear < 0 and USE_EMERGENCYSTOP): # check if it about to collide in the back
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
         outputLinear = 0
 
