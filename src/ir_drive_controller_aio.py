@@ -81,7 +81,7 @@ class IRState:
         return self.ir_sensor[pos]
     
 # Parameters
-USE_EMERGENCYSTOP = True # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
+USE_EMERGENCYSTOP = False # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
 USE_SIMULATION = True
 
 INPUT_PWM_MIN = 0 # Input PWM minimum value
@@ -127,10 +127,10 @@ def userInputCallback(msg, right):
     print("inputLinear, inputAngular : ", outputLinear, outputAngular)
 
     # if the minimum distance is within a certaun threshold then brake
-    if((irState.get(IRState._FRONT_RIGHT) or irState.get(IRState._FRONT_LEFT)) and outputLinear > 0 and USE_EMERGENCYSTOP): # check if it about to collide in the front
+    if((irState.get(irState._FRONT_RIGHT_ID) or irState.get(irState._FRONT_LEFT_ID)) and outputLinear > 0 and USE_EMERGENCYSTOP): # check if it about to collide in the front
         print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
         outputLinear = 0
-    elif ((irState.get(IRState._BACK_RIGHT) or irState.get(IRState._BACK_RIGHT)) and outputLinear < 0 and USE_EMERGENCYSTOP): # check if it about to collide in the back
+    elif ((irState.get(irState._BACK_RIGHT_ID) or irState.get(irState._BACK_RIGHT_ID)) and outputLinear < 0 and USE_EMERGENCYSTOP): # check if it about to collide in the back
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
         outputLinear = 0
 
@@ -164,8 +164,8 @@ if __name__ == "__main__":
     rospy.init_node('Ir_drive_controller')
     
     # initialize wheels publisher
-    pub_motor_l = rospy.Publisher(LEFT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=1)
-    pub_motor_r = rospy.Publisher(RIGHT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=1)
+    pub_motor_l = rospy.Publisher(LEFT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=10)
+    pub_motor_r = rospy.Publisher(RIGHT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=10)
     
     if(USE_SIMULATION):
         # initialize TWIST publisher for simulation
