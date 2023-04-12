@@ -65,10 +65,10 @@ class UserInputHandler:
 # from IR_State import IRState
 class IRState:
     """ Manual Mode no modification between user input and output """
-    _FRONT_RIGHT_ID = 1
-    _FRONT_LEFT_ID = 2
-    _BACK_RIGHT_ID = 3
-    _BACK_LEFT_ID = 4
+    _FRONT_RIGHT_ID = 0
+    _FRONT_LEFT_ID = 1
+    _BACK_RIGHT_ID = 2
+    _BACK_LEFT_ID = 3
     def __init__(self):
         self.ir_sensor = [0,0,0,0]
         return
@@ -124,10 +124,10 @@ def userInputCallback(msg, right):
     print("inputLinear, inputAngular : ", outputLinear, outputAngular)
 
     # if the minimum distance is within a certaun threshold then brake
-    if((not irState.get(IRState._FRONT_RIGHT) or not irState.get(IRState._FRONT_LEFT)) and outputLinear > 0 and USE_EMERGENCYSTOP): # check if it about to collide in the front
+    if((not irState.get(irState._FRONT_RIGHT_ID) or not irState.get(irState._FRONT_LEFT_ID)) and outputLinear > 0 and USE_EMERGENCYSTOP): # check if it about to collide in the front
         print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
         outputLinear = 0
-    elif ((not irState.get(IRState._BACK_RIGHT) or not irState.get(IRState._BACK_RIGHT)) and outputLinear < 0 and USE_EMERGENCYSTOP): # check if it about to collide in the back
+    elif ((not irState.get(irState._BACK_RIGHT_ID) or not irState.get(irState._BACK_RIGHT_ID)) and outputLinear < 0 and USE_EMERGENCYSTOP): # check if it about to collide in the back
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
         outputLinear = 0
 
@@ -161,8 +161,8 @@ if __name__ == "__main__":
     rospy.init_node('Ir_drive_controller')
     
     # initialize wheels publisher
-    pub_motor_l = rospy.Publisher(LEFT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=1)
-    pub_motor_r = rospy.Publisher(RIGHT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=1)
+    pub_motor_l = rospy.Publisher(LEFT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=10)
+    pub_motor_r = rospy.Publisher(RIGHT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=10)
     
     if(USE_SIMULATION):
         # initialize TWIST publisher for simulation
