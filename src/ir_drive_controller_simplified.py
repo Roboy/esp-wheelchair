@@ -43,10 +43,10 @@ IR_BACK_LEFT_ID = 3
 # place holder to store ir sensor data
 class IRState:
     """ Manual Mode no modification between user input and output """
-    _FRONT_RIGHT_ID = 1
-    _FRONT_LEFT_ID = 2
-    _BACK_RIGHT_ID = 3
-    _BACK_LEFT_ID = 4
+    _FRONT_RIGHT_ID = 0
+    _FRONT_LEFT_ID = 1
+    _BACK_RIGHT_ID = 2
+    _BACK_LEFT_ID = 3
     def __init__(self):
         self.ir_sensor = [0,0,0,0]
         return
@@ -66,17 +66,17 @@ def irSensorCallback(msg):
     return
     
 def userInputCallback(msg, right):
-    if((not irState.get(IRState._FRONT_RIGHT) or not irState.get(IRState._FRONT_LEFT)) and msg.data > 0 and USE_EMERGENCYSTOP): # check if it about to collide in the front
+    if((not irState.get(irState._FRONT_RIGHT_ID) or not irState.get(irState._FRONT_LEFT_ID)) and msg.data > 0 and USE_EMERGENCYSTOP): # check if it about to collide in the front
         print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
-        speed = 0
-    elif ((not irState.get(IRState._BACK_RIGHT) or not irState.get(IRState._BACK_RIGHT)) and msg.data < 0 and USE_EMERGENCYSTOP): # check if it about to collide in the back
+        msg.data = 0
+    elif ((not irState.get(irState._BACK_RIGHT_ID) or not irState.get(irState._BACK_LEFT_ID)) and msg.data < 0 and USE_EMERGENCYSTOP): # check if it about to collide in the back
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
-        speed = 0
+        msg.data = 0
 
     if(right):
-        pub_motor_r.publish(speed)
+        pub_motor_r.publish(msg.data)
     else:
-        pub_motor_l.publish(speed)
+        pub_motor_l.publish(msg.data)
     return
 
 if __name__ == "__main__":
