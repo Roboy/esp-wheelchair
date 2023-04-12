@@ -1,4 +1,6 @@
 
+
+# this is a simplified version of ir_drive_controller it didnt change the PWM input into a linear and angular insted just forward it after checking if its going to collide
 """
 Usage:
 
@@ -16,7 +18,7 @@ from std_msgs.msg import Int16, Int16MultiArray
 from geometry_msgs.msg import Twist
 
 # Parameters
-USE_EMERGENCYSTOP = True # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
+rospy.set_param('USE_EMERGENCYSTOP', True) # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
 
 INPUT_PWM_MIN = 0 # Input PWM minimum value
 INPUT_PWM_RANGE = 30 # Input PWM range value
@@ -66,10 +68,10 @@ def irSensorCallback(msg):
     return
     
 def userInputCallback(msg, right):
-    if((not irState.get(irState._FRONT_RIGHT_ID) or not irState.get(irState._FRONT_LEFT_ID)) and msg.data > 0 and USE_EMERGENCYSTOP): # check if it about to collide in the front
+    if((not irState.get(irState._FRONT_RIGHT_ID) or not irState.get(irState._FRONT_LEFT_ID)) and msg.data > 0 and rospy.get_param('USE_EMERGENCYSTOP')): # check if it about to collide in the front
         print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
         msg.data = 0
-    elif ((not irState.get(irState._BACK_RIGHT_ID) or not irState.get(irState._BACK_LEFT_ID)) and msg.data < 0 and USE_EMERGENCYSTOP): # check if it about to collide in the back
+    elif ((not irState.get(irState._BACK_RIGHT_ID) or not irState.get(irState._BACK_LEFT_ID)) and msg.data < 0 and rospy.get_param('USE_EMERGENCYSTOP')): # check if it about to collide in the back
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
         msg.data = 0
 
