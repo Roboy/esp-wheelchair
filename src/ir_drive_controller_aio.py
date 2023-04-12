@@ -29,9 +29,9 @@ class UserInputHandler:
         self.PWMRANGE = PWMRANGE
         return
     
-    def setUserInput(self, value, rigth):
+    def setUserInput(self, value, right):
         """ Set the user input, store them at class member and define IsDefine as true """
-        if (rigth):
+        if (right):
             self.rightInput = value
             self.rightIsDefined = True
         else : 
@@ -42,11 +42,10 @@ class UserInputHandler:
     def getUserInput(self):
         """ Make sure User input is defined and return user input as linear and angular speed returned the user input in the range of -1 to 1"""
         if(self.leftIsDefined and self.rightIsDefined):
-            
-            inputLinear = self.translate((self.rightInput.data + self.leftInput.data) / 2, -30, 30, -1, 1) 
-            inputAngular = self.translate((self.rightInput.data - self.leftInput.data) / 2, -30, 30, -1, 1)
-
+            inputLinear = self.translate((self.rightInput.data + self.leftInput.data) / 2, -self.PWMRANGE, self.PWMRANGE, -1, 1) 
+            inputAngular = self.translate((self.rightInput.data - self.leftInput.data) / 2, -self.PWMRANGE, self.PWMRANGE, -1, 1)
             return inputLinear, inputAngular
+    
         else:
             inputLinear = 0
             inputAngular = 0
@@ -110,6 +109,8 @@ IR_BACK_LEFT_ID = 3
 userInputHandler = UserInputHandler(INPUT_PWM_MIN, INPUT_PWM_RANGE)
 irState = IRState()
 
+sign = lambda a: (a>0) - (a<0)
+
 def userInputCallback(msg, right):   
     """ 
     Callback funtion for user input. Takes the user input be it Twist_Teleop_Keyboard or joystick and based of variable Mode add moddification to speed
@@ -144,8 +145,8 @@ def userInputCallback(msg, right):
         assisted_navigation_pub.publish(twist)
 
     # publish the PWM output to the motor
-    r = int(userInputHandler.translate((x + z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE ))
-    l = int(userInputHandler.translate((x - z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE ))
+    r = int(userInputHandler.translate((x + z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE )) + sign(r) * OUTPUT_PWM_MIN
+    l = int(userInputHandler.translate((x - z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE )) + sign(l) * OUTPUT_PWM_MIN
     print("left : ", l, ", right : ",r)
     
     pub_motor_l.publish(l)
