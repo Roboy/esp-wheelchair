@@ -15,11 +15,11 @@ from std_msgs.msg import Int16, Int16MultiArray
 from geometry_msgs.msg import Twist
 
 from user_input_handler import UserInputHandler
-from IR_State import IRState
+from ir_state import IRState
 
 # Parameters
-USE_EMERGENCYSTOP = True # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
-USE_SIMULATION = True
+rospy.set_param('USE_ASSISTED_DRIVE', True) # USE_EMERGENCYSTOP Will use emergency stop when distance to obstacle below the THRESHOLD_EMERGENCYSTOP
+USE_SIMULATION = False
 
 INPUT_PWM_MIN = 0 # Input PWM minimum value
 INPUT_PWM_RANGE = 30 # Input PWM range value
@@ -61,13 +61,13 @@ def userInputCallback(msg, right):
 
     # call the current Mode control function to get the adjusted output
     outputLinear, outputAngular = userInputHandler.getUserInput()
-    print("inputLinear, inputAngular : ", outputLinear, outputAngular)
-
+    
+    AD = rospy.get_param('USE_ASSISTED_DRIVE') 
     # if the minimum distance is within a certaun threshold then brake
-    if((irState.get(IRState._FRONT_RIGHT) or irState.get(IRState._FRONT_LEFT)) and outputLinear > 0 and USE_EMERGENCYSTOP): # check if it about to collide in the front
+    if((irState.get(IRState._FRONT_RIGHT_ID) or irState.get(IRState._FRONT_LEFT_ID)) and outputLinear > 0 and AD): # check if it about to collide in the front
         print ("ABOUT TO COLLIDE FRONT EMERGENCY BRAKE")
         outputLinear = 0
-    elif ((irState.get(IRState._BACK_RIGHT) or irState.get(IRState._BACK_RIGHT)) and outputLinear < 0 and USE_EMERGENCYSTOP): # check if it about to collide in the back
+    elif ((irState.get(IRState._BACK_RIGHT_ID) or irState.get(IRState._BACK_RIGHT_ID)) and outputLinear < 0 and AD): # check if it about to collide in the back
         print ("ABOUT TO COLLIDE BACK EMERGENCY BRAKE")
         outputLinear = 0
 
