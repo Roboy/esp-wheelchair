@@ -85,8 +85,8 @@ def userInputCallback(msg, right):
         assisted_navigation_pub.publish(twist)
 
     # publish the PWM output to the motor
-    r = int(userInputHandler.translate((x + z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE ))
-    l = int(userInputHandler.translate((x - z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE ))
+    r = int(userInputHandler.translate((x + z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE ) + sign(x + z) * userInputHandler.PWM_MIN)
+    l = int(userInputHandler.translate((x - z)/2, -1, 1, -OUTPUT_PWM_RANGE, OUTPUT_PWM_RANGE ) + sign(x - z) * userInputHandler.PWM_MIN)
     print("left : ", l, ", right : ",r)
     
     pub_motor_l.publish(l)
