@@ -8,9 +8,9 @@
 ```
 git clone -b an_ToF https://github.com/Roboy/esp-wheelchair.git
 ```
-2. Next, navigate to the "src" folder within the cloned repository.
+2. Next, navigate to the "src" folder within the repository.
 
-3. Copy the "assisted_navigation" package to your desired workspace.
+3. Copy the "assisted_navigation" package to your workspace.
 
 4. Build the workspace using the "catkin_make" command.
 
