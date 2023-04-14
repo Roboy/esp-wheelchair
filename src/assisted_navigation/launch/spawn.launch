@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-  <param name="robot_description" command="cat '$(find robody_sim)/urdf/robody.xacro'"/>
+  <param name="robot_description" command="cat '$(find robody_sim)/urdf/m2wr.xacro'"/>
   
   <arg name="x" default="3"/>
   <arg name="y" default="0"/>

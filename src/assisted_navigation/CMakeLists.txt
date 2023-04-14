@@ -8,7 +8,7 @@ project(assisted_navigation)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  gazebo_rosros
+  gazebo_ros
   geometry_msgs
   roscpp
   rospy
@@ -108,7 +108,7 @@ catkin_python_setup()
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES assisted_navigation
-#  CATKIN_DEPENDS gazebo_rosros geometry_msgs roscpp rospy std_msgs urdf
+#  CATKIN_DEPENDS gazebo_ros geometry_msgs roscpp rospy std_msgs urdf
 #  DEPENDS system_lib
 )
 
