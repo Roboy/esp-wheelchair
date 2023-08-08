@@ -18,6 +18,7 @@ static const char* TAG = "ros-comms";
 
 #define GPIO_PWM_L GPIO_NUM_12 // pwm-pwm
 #define GPIO_PWM2_L GPIO_NUM_15
+
 #define GPIO_EN1_L GPIO_NUM_4
 #define GPIO_EN2_L GPIO_NUM_5 
 
@@ -140,7 +141,7 @@ void pwm_update_L( const std_msgs::Int16& drive_L )
   int msg_len = 100;
   char message[msg_len];
   snprintf(message, msg_len, "Got motor left value: %d\n", pwm_tmp);
-  printf(message);
+  //printf(message);
   status_msg.data = message;
   status_pub.publish(&status_msg);
   if ( pwm_tmp > pwm_lim_top )     // Clamping
@@ -281,34 +282,58 @@ void rosserial_setup()
 
 }
 
-void rosserial_spinonce()
+bool rosserial_spinonce()
 {
+  // int msg_len = 100;
+  // char message[msg_len];
+  // snprintf(message, msg_len, "WiFi connected: %d", WIFI_CONNECTED);
+  // printf(message);
+  // status_msg.data = message;
+  // status_pub.publish(&status_msg);
+
+  bool connected = true;
   counter++;
 
   if (counter % 100) {
     // ESP_LOGI(TAG, "duties0: %d, duties1: %d, ",duties[0],duties[1]);
-    ESP_LOGI(TAG, "counter: %d", counter);
+    // ESP_LOGI(TAG, "counter: %d", counter);
   }
 
-  if ((counter - last_left_cmd_counter) > 100) {
+  if ((counter - last_left_cmd_counter) > 300) {
       ESP_LOGI(TAG, "Timer for the left motor expired!");
       duties[1] = 0; 
       duties[2] = 0;
-      gpio_set_level(GPIO_EN1_L,0);
-      gpio_set_level(GPIO_EN2_L,0);
+      // gpio_set_level(GPIO_EN1_L,0);
+      // gpio_set_level(GPIO_EN2_L,0);
 
       ESP_ERROR_CHECK( pwm_set_duties(duties) );
       ESP_ERROR_CHECK( pwm_start() );
-  }
+      // connected = false;
+  } 
+  // else {
+  //     duties[1] = 20; 
+  //     duties[2] = 20;
+  //     // gpio_set_level(GPIO_EN1_L,0);
+  //     // gpio_set_level(GPIO_EN2_L,0);
 
-  if ((counter - last_right_cmd_counter) > 100) {
+  //     ESP_ERROR_CHECK( pwm_set_duties(duties) );
+  //     ESP_ERROR_CHECK( pwm_start() );
+  // }
+
+  if ((counter - last_right_cmd_counter) > 300) {
       ESP_LOGI(TAG, "Timer for the right motor expired!");
       duties[0] = 0;
       
       ESP_ERROR_CHECK( pwm_set_duties(duties) );
       ESP_ERROR_CHECK( pwm_start() );
+      // connected = false;
+  }
+
+  if (counter > 0 && (counter - last_right_cmd_counter) > 500 && (counter - last_left_cmd_counter) > 500) {
+    connected = false;
   }
 
   nh.spinOnce();
+  return connected;
 }
 

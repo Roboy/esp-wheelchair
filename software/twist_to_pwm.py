@@ -26,10 +26,11 @@ from std_msgs.msg import Int16
 PWM_MIN = 5
 PWMRANGE = 40
 
+topic_root = "/roboy/pinky"
 rospy.init_node("wheelchair_twist_converter")
 
-pub_l = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/left", Int16, queue_size=1)
-pub_r = rospy.Publisher("/roboy/pinky/middleware/espchair/wheels/right", Int16, queue_size=1)
+pub_l = rospy.Publisher(topic_root + "/middleware/espchair/wheels/left", Int16, queue_size=1)
+pub_r = rospy.Publisher(topic_root + "/middleware/espchair/wheels/right", Int16, queue_size=1)
 
 sign = lambda a: (a>0) - (a<0)
 
@@ -56,7 +57,7 @@ def cb(msg):
 
 
 
-sub = rospy.Subscriber("/cmd_vel", Twist, cb)
+sub = rospy.Subscriber(topic_root + "/control/espchair/cmd_vel", Twist, cb)
 
-rospy.loginfo("Subscribed to /cmd_vel, will publish wheelchair PWM. Spinning...")
+rospy.loginfo("Subscribed to " + topic_root + "/control/espchair/cmd_vel" + ", will publish wheelchair PWM. Spinning...")
 rospy.spin()

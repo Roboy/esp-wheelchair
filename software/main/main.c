@@ -128,6 +128,8 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
 
 void wifi_init_sta()
 {
+    // WIFI_CONNECTED = WIFI_CONNECTED_BIT;
+    ESP_LOGI(TAG, "wifi connected: %d", WIFI_CONNECTED_BIT);
     nvs_flash_init();  
 
     wifi_event_group = xEventGroupCreate();
@@ -228,7 +230,7 @@ static void status_task(void *pvParameters)
 void app_main()
 {
     // printf("Hello world!\n");
-
+    // ESP_LOGI(TAG, "wifi connected: %d", WIFI_CONNECTED_BIT);
    
     taskENTER_CRITICAL();  // Disable interrupts while setting up tasks and config
 
@@ -267,7 +269,7 @@ void app_main()
     printf("PWM online\n");
 
      // Init wifi and network stack
-    wifi_init_sta();
+    //wifi_init_sta();
 
     
     // Init ROS
@@ -281,13 +283,29 @@ void app_main()
 
     // Enable timer as ROS communication watchdog
     //ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, TIMEOUT_IN_US) );
-    
+    bool connected = true;
     for (;;) {    // Spin ROS every ~1 ms -ish
-        rosserial_spinonce();
+
+        
+        if (!connected) {
+            // vTaskDelay(1000 / portTICK_PERIOD_MS);
+            // connected = rosserial_spinonce();
+
+            // if (! connected) {
+
+                ESP_LOGI(TAG,"Restarting now. (Not really, just exited the main loop though!)\n");
+                esp_restart();
+            // }
+        }
+
+        connected = rosserial_spinonce();
         vTaskDelay(1 / portTICK_PERIOD_MS);
+        // ESP_LOGI(TAG, "wifi connected: %d", connected);
+        
     }
 
 
-    printf("Restarting now. (Not really, just exited the main loop though!)\n");
+    ESP_LOGI(TAG,"Restarting now. (Not really, just exited the main loop though!)\n");
+    esp_restart();
     // fflush(stdout);
 }

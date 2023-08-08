@@ -26,9 +26,11 @@ extern const gpio_num_t gpio_pins[6];
 
 extern esp_timer_handle_t timer_handle;
 
+// extern int WIFI_CONNECTED = -1;
+
 void rosserial_setup();
 
-void rosserial_spinonce();
+bool rosserial_spinonce();
 
 #ifdef __cplusplus
 }
