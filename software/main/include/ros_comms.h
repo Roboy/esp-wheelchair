@@ -15,7 +15,7 @@ extern "C" {
 #define PWM_PERIOD 100U
 // #define PWM_PERIOD 50U
 
-#define N_PWM_PINS 3
+#define N_PWM_PINS 4
 
 
 extern uint32_t duties[N_PWM_PINS];

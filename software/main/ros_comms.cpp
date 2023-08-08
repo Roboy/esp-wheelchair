@@ -13,8 +13,11 @@
 
 static const char* TAG = "ros-comms";
 
-#define GPIO_PWM_R GPIO_NUM_14 
-#define GPIO_DIR1_R GPIO_NUM_13 
+// #define GPIO_PWM_R GPIO_NUM_14 
+// #define GPIO_DIR1_R GPIO_NUM_13 
+
+#define GPIO_PWM_R GPIO_NUM_14 // pwm-pwm
+#define GPIO_PWM2_R GPIO_NUM_13
 
 #define GPIO_PWM_L GPIO_NUM_12 // pwm-pwm
 #define GPIO_PWM2_L GPIO_NUM_15
@@ -54,8 +57,10 @@ esp_timer_handle_t timer_handle;
 
 // GPIO List
 const gpio_num_t gpio_pins[6] = {
-  GPIO_PWM_R, 
-  GPIO_DIR1_R,
+  // GPIO_PWM_R, 
+  // GPIO_DIR1_R,
+  GPIO_PWM_R,
+  GPIO_PWM2_R,
   
   GPIO_PWM_L,
   GPIO_PWM2_L,
@@ -64,18 +69,86 @@ const gpio_num_t gpio_pins[6] = {
     
 };
 
+// void pwm_update_R( const std_msgs::Int16& drive_R )
+// {
+//   last_right_cmd_counter = counter;
+  
+//   int pwm_tmp = drive_R.data;
+//   int msg_len = 100;
+//   char message[msg_len];
+//   snprintf(message, msg_len, "Got motor right value: %d\n", pwm_tmp);
+//   printf(message);
+//   status_msg.data = message;
+//   status_pub.publish(&status_msg);
+
+//   if ( pwm_tmp > pwm_lim_top )     // Clamping
+//   {
+//     // ESP_LOGW(TAG, "Warning, sent PWM of %d over top limit, pwm_lim_top = %d", pwm_tmp, pwm_lim_top);
+//     pwm_tmp = pwm_lim_top;
+//     snprintf(message, msg_len, "Warning, sent PWM of %d over top limit, pwm_lim_top = %d", pwm_tmp, pwm_lim_top);
+//     status_msg.data = message;
+//     status_pub.publish(&status_msg);
+//   }
+//   if ( pwm_tmp < pwm_lim_bot )
+//   {
+//     // ESP_LOGW(TAG, "Warning, PWM of %d below pwm_lim_bot", pwm_tmp);
+//     pwm_tmp = pwm_lim_bot;
+//     snprintf(message, msg_len, "Warning, PWM of %d below pwm_lim_bot", pwm_tmp);
+//     status_msg.data = message;
+//     status_pub.publish(&status_msg);
+//   }
+
+  
+
+//   if (pwm_tmp >= 0 )    // Direction reversal
+//   {
+    
+//     //duties[2] = 0;
+//     duties[0] = pwm_tmp;
+//     gpio_set_level(GPIO_DIR1_R,0);
+
+//   }else{
+//     pwm_tmp *= -1;
+//     // //duties[0] = 0;
+//     duties[0] = pwm_tmp;
+    
+//     gpio_set_level(GPIO_DIR1_R,1);
+
+//   }
+
+
+//   //ESP_ERROR_CHECK( esp_timer_stop(timer_handle) ); //Feed the timer
+//   //ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, TIMEOUT_IN_US) );
+
+//   // ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
+//   // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_0 = %d", pwm_tmp, pwm_limit_val, duties[0]);
+
+//   if ( !emergency_stop_active )
+//   {
+//     ESP_ERROR_CHECK( pwm_set_duties(duties) );
+//     ESP_ERROR_CHECK( pwm_start() );
+//   } else {
+//     duties[0] = 0;
+//      duties[1] = 0;    
+//      duties[2]=0;              //Set all PWM to 0
+//     for ( int i = 0; i < 4; i++){       //Ensure pwm=0
+      
+//       gpio_set_level(gpio_pins[i],0);   //Disable all low side switches
+//     }
+//   }
+
+// }
+
 void pwm_update_R( const std_msgs::Int16& drive_R )
 {
   last_right_cmd_counter = counter;
-  
-  int pwm_tmp = drive_R.data;
+  int pwm_tmp = drive_R.data*-1;//*0.889; // fix, since the left motor is 91 RPM and right is 80 RPM
   int msg_len = 100;
   char message[msg_len];
   snprintf(message, msg_len, "Got motor right value: %d\n", pwm_tmp);
-  printf(message);
+  //printf(message);
   status_msg.data = message;
   status_pub.publish(&status_msg);
-
   if ( pwm_tmp > pwm_lim_top )     // Clamping
   {
     // ESP_LOGW(TAG, "Warning, sent PWM of %d over top limit, pwm_lim_top = %d", pwm_tmp, pwm_lim_top);
@@ -93,45 +166,42 @@ void pwm_update_R( const std_msgs::Int16& drive_R )
     status_pub.publish(&status_msg);
   }
 
-  
 
+  // PWM-PWM mode
   if (pwm_tmp >= 0 )    // Direction reversal
   {
-    
-    //duties[2] = 0;
     duties[0] = pwm_tmp;
-    gpio_set_level(GPIO_DIR1_R,0);
+    duties[3] = 0;
 
-  }else{
+  }else{              
+
     pwm_tmp *= -1;
-    // //duties[0] = 0;
-    duties[0] = pwm_tmp;
-    
-    gpio_set_level(GPIO_DIR1_R,1);
+    duties[0] = 0;
+    duties[3] = pwm_tmp;
 
   }
 
+  // ESP_ERROR_CHECK( esp_timer_stop(timer_handle) ); //Feed the timer
+  // ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, TIMEOUT_IN_US) );
 
-  //ESP_ERROR_CHECK( esp_timer_stop(timer_handle) ); //Feed the timer
-  //ESP_ERROR_CHECK( esp_timer_start_once(timer_handle, TIMEOUT_IN_US) );
-
-  // ESP_LOGI(TAG, "duties0: %d, duties1: %d, duties2: %d, duties3: %d",duties[0],duties[1],duties[2],duties[3]);
-  // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_0 = %d", pwm_tmp, pwm_limit_val, duties[0]);
+  // ESP_LOGI(TAG, "duties0: %d, duties1: %d, ",duties[0],duties[1]);
+  // ESP_LOGI(TAG, "pwm_tmp = %d, with PWMLIM %d, duties_1 = %d", pwm_tmp, pwm_limit_val, duties[1]);
 
   if ( !emergency_stop_active )
   {
+    gpio_set_level(GPIO_EN1_L,1);
+    gpio_set_level(GPIO_EN2_L,1);
     ESP_ERROR_CHECK( pwm_set_duties(duties) );
     ESP_ERROR_CHECK( pwm_start() );
   } else {
-    duties[0] = 0;
-     duties[1] = 0;    
-     duties[2]=0;              //Set all PWM to 0
+     duties[0] = 0;
+     duties[1] = 0;      
+     duties[3] = 0;
     for ( int i = 0; i < 4; i++){       //Ensure pwm=0
       
       gpio_set_level(gpio_pins[i],0);   //Disable all low side switches
     }
   }
-
 }
 
 void pwm_update_L( const std_msgs::Int16& drive_L )
@@ -323,6 +393,7 @@ bool rosserial_spinonce()
   if ((counter - last_right_cmd_counter) > 300) {
       ESP_LOGI(TAG, "Timer for the right motor expired!");
       duties[0] = 0;
+      duties[3] = 0;
       
       ESP_ERROR_CHECK( pwm_set_duties(duties) );
       ESP_ERROR_CHECK( pwm_start() );

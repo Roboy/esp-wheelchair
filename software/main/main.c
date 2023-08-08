@@ -64,7 +64,8 @@ tcpip_adapter_ip_info_t ipInfo;     //Current IP info
 const uint32_t pwm_pins[N_PWM_PINS] = {
             GPIO_NUM_14,
             GPIO_NUM_12,
-            GPIO_NUM_15
+            GPIO_NUM_15,
+            GPIO_NUM_13
 
 };
 
@@ -106,6 +107,8 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
             }
             duties[0] = 0;                    //Set all PWM to 0
             duties[1] = 0;
+            duties[2] = 0;
+            duties[3] = 0;
             for ( int i = 0; i < 6; i++){       //Stop motors on connection loss
               
               gpio_set_level(gpio_pins[i],1);   
@@ -258,6 +261,7 @@ void app_main()
     // //Init PWM
     duties[0] = 0;
     duties[1] = 0;
+    duties[2] = 0;
     duties[2] = 0;
     pwm_init(PWM_PERIOD, duties, N_PWM_PINS, pwm_pins);
     pwm_set_phases(phases);
