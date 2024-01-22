@@ -1,3 +1,16 @@
+# Current pinout 
+```
+#define GPIO_PWM_R GPIO_NUM_14 // pwm-pwm
+#define GPIO_PWM2_R GPIO_NUM_13
+
+#define GPIO_PWM_L GPIO_NUM_12 // pwm-pwm
+#define GPIO_PWM2_L GPIO_NUM_15
+
+# all enable pins from both drivers are merged to a single ESP pin
+#define GPIO_EN1_L GPIO_NUM_4
+#define GPIO_EN2_L GPIO_NUM_5
+```
+
 # ESP8266 + RTOS + ROS1
 ## Prerequisites
 - install ROS1 melodic
