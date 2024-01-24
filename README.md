@@ -8,7 +8,6 @@
 
 # all enable pins from both drivers are merged to a single ESP pin
 #define GPIO_EN1_L GPIO_NUM_4
-#define GPIO_EN2_L GPIO_NUM_5
 ```
 NodeMCU Amica ESP8266 pintout: https://cdn.shopify.com/s/files/1/1509/1638/files/NodeMCU_LUA_Amica_V2_Pinout_Diagram.pdf?14596320546790113351
 # ESP8266 + RTOS + ROS1
