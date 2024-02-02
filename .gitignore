@@ -1,6 +1,6 @@
 software/build
 
 /*cache*
-
+**/__pycache__
 **/*.swp
 **/*.swo
