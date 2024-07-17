@@ -83,7 +83,7 @@ def publish_cmd(pub, msg, right):
     global boost_factor
     msg.data = int(msg.data*boost_factor)
     idx = 0 if right else 1
-    
+    '''
     if msg.data == 0:
         if last_cmds[idx] == 0:
             pub.publish(0)
@@ -103,8 +103,9 @@ def publish_cmd(pub, msg, right):
     else:
         pub.publish(msg.data)
         last_cmds[idx] = msg.data
+    '''
     # rospy.loginfo_throttle(1,last_cmds[idx])
-    # pub.publish(msg.data)
+    pub.publish(msg.data)
 
     
 def userInputCallbackRight(msg):
@@ -151,8 +152,8 @@ if __name__ == "__main__":
     pub_motor_r = rospy.Publisher(RIGHT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=1)
     
     # initialize subscriber for user input 
-    user_input_sub_r = rospy.Subscriber(RIGHT_MOTOR_TOPIC_INPUT, Int16, userInputCallbackRight)
-    user_input_sub_l = rospy.Subscriber(LEFT_MOTOR_TOPIC_INPUT, Int16, userInputCallbackLeft)
+    user_input_sub_r = rospy.Subscriber(RIGHT_MOTOR_TOPIC_INPUT, Int16, userInputCallbackRight, queue_size=1)
+    user_input_sub_l = rospy.Subscriber(LEFT_MOTOR_TOPIC_INPUT, Int16, userInputCallbackLeft, queue_size=1)
 
     #Initialize subscriber for Ir sensor
     ir_sub = rospy.Subscriber(IR_TOPIC, Int16MultiArray, irSensorCallback)
