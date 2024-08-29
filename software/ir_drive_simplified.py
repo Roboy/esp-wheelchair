@@ -14,8 +14,11 @@ rosrun teleop_twist_keyboard teleop_twist_keyboard.py
 
 """
 import rospy
-from std_msgs.msg import Int16, Int16MultiArray
+from std_msgs.msg import Int16, Int16MultiArray, Float32
 from geometry_msgs.msg import Twist
+from diagnostic_msgs.msg import DiagnosticStatus
+
+import threading
 
 from numpy import sign
 import sys
@@ -39,6 +42,10 @@ RIGHT_MOTOR_TOPIC_OUTPUT = "/roboy/pinky/middleware/espchair/wheels/right"
 
 LEFT_MOTOR_TOPIC_INPUT = "/operator/wheels/left" #"/roboy/pinky/middleware/espchair/wheels/left/input"
 RIGHT_MOTOR_TOPIC_INPUT = "/operator/wheels/right" #"/roboy/pinky/middleware/espchair/wheels/right/input"
+
+BOOST_TOPIC = "/alice/control/wheels/boost_factor"
+
+HEARTBEAT_TOPIC = "/alice/heartbeat"
 
 # Publish TWIST output mainly for simulation 
 ASSISTED_NAVIGATION_TOPIC_OUTPUT = '/roboy/pinky/middleware/espchair/wheels/assisted_navigation'
@@ -142,7 +149,17 @@ def signal_handler(sig, frame):
     print('Ctrl+C detected, shutting down...')
     sys.exit(0)
 
+def boost_factor_cb(msg):
+    rospy.set_param("wheels_boost_factor", msg.data)
+    rospy.loginfo("set boost param")
 
+def status_pub(rate=1):
+    ros_rate = rospy.Rate(rate)
+    msg = DiagnosticStatus(hardware_id="wheels", level=0)
+    while not rospy.is_shutdown():
+        pub_heartbeat.publish(msg)
+        ros_rate.sleep()
+        
 if __name__ == "__main__":
     # init main loop
     rospy.init_node('assisted_drive_controller')
@@ -151,9 +168,13 @@ if __name__ == "__main__":
     pub_motor_l = rospy.Publisher(LEFT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=1)
     pub_motor_r = rospy.Publisher(RIGHT_MOTOR_TOPIC_OUTPUT, Int16, queue_size=1)
     
+    pub_heartbeat = rospy.Publisher(HEARTBEAT_TOPIC, DiagnosticStatus, queue_size=1)
     # initialize subscriber for user input 
     user_input_sub_r = rospy.Subscriber(RIGHT_MOTOR_TOPIC_INPUT, Int16, userInputCallbackRight, queue_size=1)
     user_input_sub_l = rospy.Subscriber(LEFT_MOTOR_TOPIC_INPUT, Int16, userInputCallbackLeft, queue_size=1)
+
+    # boost factor sub
+    boost_sub = rospy.Subscriber(BOOST_TOPIC, Float32, boost_factor_cb, queue_size=1)
 
     #Initialize subscriber for Ir sensor
     ir_sub = rospy.Subscriber(IR_TOPIC, Int16MultiArray, irSensorCallback)
@@ -162,6 +183,9 @@ if __name__ == "__main__":
     rate = rospy.Rate(100)
 
     signal.signal(signal.SIGINT, signal_handler)
+
+    heartbeat_thread = threading.Thread(target=status_pub)
+    heartbeat_thread.start()
 
     global ad, boost_factor
     while not rospy.is_shutdown():
