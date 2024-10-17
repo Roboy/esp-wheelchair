@@ -369,7 +369,7 @@ bool rosserial_spinonce()
     // ESP_LOGI(TAG, "counter: %d", counter);
   }
 
-  if ((counter - last_left_cmd_counter) > 300) {
+  if ((counter - last_left_cmd_counter) > 500) {
       ESP_LOGI(TAG, "Timer for the left motor expired!");
       duties[1] = 0; 
       duties[2] = 0;
@@ -390,7 +390,7 @@ bool rosserial_spinonce()
   //     ESP_ERROR_CHECK( pwm_start() );
   // }
 
-  if ((counter - last_right_cmd_counter) > 300) {
+  if ((counter - last_right_cmd_counter) > 500) {
       ESP_LOGI(TAG, "Timer for the right motor expired!");
       duties[0] = 0;
       duties[3] = 0;
@@ -400,7 +400,7 @@ bool rosserial_spinonce()
       // connected = false;
   }
 
-  if (counter > 0 && (counter - last_right_cmd_counter) > 500 && (counter - last_left_cmd_counter) > 500) {
+  if (counter > 0 && (counter - last_right_cmd_counter) > 1000 && (counter - last_left_cmd_counter) > 1000) {
     connected = false;
   }
 
